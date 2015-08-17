@@ -12,3 +12,4 @@ mkdir "C:\programdata\microsoft\Windows\Start Menu\Programs\Printerceptor"
 xcopy "C:\Program Files\Printerceptor\printerceptor.lnk" "C:\programdata\microsoft\Windows\Start Menu\Programs\Printerceptor"
 
 cscript MessageBox.vbs "Printerceptor UI will now open. It may take a few seconds to load..."
+start powershell ./printer.ps1 -configure 1
