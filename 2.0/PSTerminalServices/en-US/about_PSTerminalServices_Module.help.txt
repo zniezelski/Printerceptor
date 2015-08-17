@@ -1,0 +1,66 @@
+TOPIC
+	about_PSTerminalServices_Module
+
+SHORT DESCRIPTION
+	The PSTerminalServices module contains functions to manage Terminal Services sessions and processes (including Remote Desktop connections).
+
+LONG DESCRIPTION
+	The PSTerminalServices module contains functions to manage Terminal Services (including RemoteDesktop) sessions and processes.
+	The module is based on an open source project named Cassia (version 2.0.0.60), a .NET library for accessing the native Windows Terminal Services API. 
+
+	The following operations are supported on the local and a remote terminal server: 
+	
+	1. Enumerating terminal sessions and reporting session information including connection state, user name, client name, client display details, client-reported IP address, and client build number. 
+	2. Logging off a session. 	
+	3. Disconnecting a session.	
+	3. Displaying a message box in a session.	
+	4. Enumerating all processes or processes for a specified session.	
+	5. Killing a process.	
+	
+
+	Supported Platforms
+	-------------------
+	Cassia has been tested on Windows Server 2008 R2 beta, Windows Server 2008, Windows Server 2003, 
+	Windows XP, and Windows Server 2000. It should work on Windows Vista as well. 
+	
+	
+	
+	Cassia - Source Files
+	---------------------
+	Cassia source files are included in the module's bin directory (compressed file). 
+
+
+	
+	The following functions are added to the current session when you import the module:
+
+		Disconnect-TSSession - Disconnects any attached user from the session.
+
+		Get-TSCurrentSession - Provides information about the session in which the current process is running.
+
+		Get-TSServers - Enumerates all terminal servers in a given domain.
+
+		Get-TSProcess - Gets a list of processes running in a specific session or in all sessions.
+
+		Get-TSSession - Lists the sessions on a given terminal server.
+		
+		Send-TSMessage - Displays a message box in the specified session ID.
+
+		Stop-TSProcess - Terminates the process running in a specific session or in all sessions.
+
+		Stop-TSSession - Logs the session off, disconnecting any user that might be connected.
+
+
+	Reporting Bugs/Suggestions
+	--------------------------
+	Bugs related to the dll can be reported directly to Cassia's mailing list: cassia-users@googlegroups.com. 
+	Bugs/Suggestions/Comments can be reported on the Author's blog.
+
+
+SEE ALSO
+    about_Modules
+    Get-Module
+    Import-Module
+    Remove-Module
+
+    Cassia Project Home Page
+    http://code.google.com/p/cassia/
