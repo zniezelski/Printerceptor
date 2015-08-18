@@ -2,6 +2,7 @@
 mkdir "C:\Program Files\Printerceptor"
 xcopy *.* "C:\Program Files\Printerceptor"
 cd "C:\Program Files\Printerceptor"
+rename Printerceptor.tmp Printerceptor.lnk
 regedit.exe /S RemoteSigned.reg
 regedit.exe /S DefaultKeys.reg
 xcopy "C:\Program Files\Printerceptor\printerceptor.lnk" %userprofile%\desktop /y
