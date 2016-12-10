@@ -1481,10 +1481,10 @@ $ButtonAdvancedPolicy.add_Click({
 		$AdvancedPolicyList = New-Object System.Windows.Forms.listview
 		$AdvancedPolicyList.location = New-Object System.Drawing.Size(5,5) 
 		$AdvancedPolicyList.Size = New-Object System.Drawing.Size(545,370) 
-		$AdvancedPolicyList.CheckBoxes = $true
-		$AdvancedPolicyList.Columns.Add("Name",150)
+		#$AdvancedPolicyList.CheckBoxes = $true
+		$AdvancedPolicyList.Columns.Add("Name",385)
         $AdvancedPolicyList.Columns.Add("Priority",55)
-        $AdvancedPolicyList.Columns.Add("Description",335)
+        $AdvancedPolicyList.Columns.Add("Enabled",100)
 		$AdvancedPolicyList.View = [System.Windows.Forms.View]::details
 
 #$AdvancedPolicyList.Items.Add("Non Full Access Enabled")
@@ -1497,16 +1497,18 @@ $policies = $policies | Foreach-Object {Get-ItemProperty $_.PsPath } | Sort-Obje
     foreach ($policy in $policies){
     $policypath = "HKLM:\SOFTWARE\Printerceptor\AdvancedPolicy\" + $policy
     $enabledstate = Get-ItemProperty -Path $policypath -Name "Enabled" | select -ExpandProperty Enabled
+    if ($enabledstate -eq 1) {$policyenabledvalue = "Yes"} else {$policyenabledvalue = "No"}
+   
     #get the priority
     $priority = (get-ItemProperty -Path $policypath).priority
     $policydescription = (get-ItemProperty -Path $policypath).description
     $ListViewItem = New-Object System.Windows.Forms.ListViewItem($policy)
     $ListViewItem.Subitems.Add($priority) | Out-Null
-    $ListViewItem.Subitems.Add($policydescription) | Out-Null
+    $ListViewItem.Subitems.Add($policyenabledvalue) | Out-Null
    
   
    if ($enabledstate -eq "1"){
-    $AdvancedPolicyList.items.Add($ListViewItem).checked = $true 
+    $AdvancedPolicyList.items.Add($ListViewItem)
    }else {
    $AdvancedPolicyList.items.Add($ListViewItem)
 
@@ -1663,21 +1665,21 @@ $AdvancedPolicyOk.add_Click({
 
 #Enable/Disable policy
 
-foreach ($item in $AdvancedPolicyList.CheckedItems)
-{
-$PolicyPath = "HKLM:\SOFTWARE\Printerceptor\AdvancedPolicy\" + $item.text
-New-Itemproperty -Path $PolicyPath -Name "Enabled" -Value "1" -PropertyType "DWord" -Force
-}
+#foreach ($item in $AdvancedPolicyList.CheckedItems)
+#{
+#$PolicyPath = "HKLM:\SOFTWARE\Printerceptor\AdvancedPolicy\" + $item.text
+#New-Itemproperty -Path $PolicyPath -Name "Enabled" -Value "1" -PropertyType "DWord" -Force
+#}
 
 
 
 $unchecked=$AdvancedPolicyList.Items | ?{$AdvancedPolicyList.CheckedItems -notcontains $_}
 
-foreach ($item in $unchecked)
-{
-$PolicyPath = "HKLM:\SOFTWARE\Printerceptor\AdvancedPolicy\" + $item.text
-New-Itemproperty -Path $PolicyPath -Name "Enabled" -Value "0" -PropertyType "DWord" -Force
-}
+#foreach ($item in $unchecked)
+#{
+#$PolicyPath = "HKLM:\SOFTWARE\Printerceptor\AdvancedPolicy\" + $item.text
+#New-Itemproperty -Path $PolicyPath -Name "Enabled" -Value "0" -PropertyType "DWord" -Force
+#}
 
 
 & $CheckAdvancedPolicyExistance
@@ -1800,7 +1802,7 @@ $scriptblock =
         $Policydescription = Get-ItemProperty -Path $key -Name "Description" | select -ExpandProperty Description
         $NextPrirority = Get-ItemProperty -Path $key -Name "priority" | select -ExpandProperty priority
         $policyenabled = Get-ItemProperty -Path $key -Name "enabled" | select -ExpandProperty enabled
-        
+        $PolicyEnable = $policyenabled
 
 #load security objects
         [array]$global:AdvSecName = Get-ItemProperty -Path $key -Name "SecName" | select -ExpandProperty SecName
@@ -1828,16 +1830,16 @@ $scriptblock =
 
         $txtpolicyname = New-Object System.Windows.Forms.TextBox 
         $txtpolicyname.Location = New-Object System.Drawing.Point(90,8) 
-        $txtpolicyname.Size = New-Object System.Drawing.Size(190,20) 
+        $txtpolicyname.Size = New-Object System.Drawing.Size(390,20) 
         $txtpolicyname.Text = $Policyname
 
 
 		$labelPolicyDescription = New-Object System.Windows.Forms.Label
-		$labelPolicyDescription.location = New-Object System.Drawing.Point(5, 40)
-		$labelPolicyDescription.Size = New-Object System.Drawing.Size(70, 15)
+		$labelPolicyDescription.location = New-Object System.Drawing.Point(28, 40)
+		$labelPolicyDescription.Size = New-Object System.Drawing.Size(60, 15)
 		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
 		$labelPolicyDescription.Font = $FontBold
-		$labelPolicyDescription.Text = "Description:"
+		$labelPolicyDescription.Text = "Enabled:"
 
 		$labelConditions = New-Object System.Windows.Forms.Label
 		$labelConditions.location = New-Object System.Drawing.Point(5, 90)
@@ -1847,10 +1849,18 @@ $scriptblock =
 		$labelConditions.Text = "Conditions:"
 
 
-        $txtpolicydescription = New-Object System.Windows.Forms.TextBox 
-        $txtpolicydescription.Location = New-Object System.Drawing.Point(90,39) 
-        $txtpolicydescription.Size = New-Object System.Drawing.Size(300,15)
-        $txtpolicydescription.Text = $Policydescription
+        #$txtpolicydescription = New-Object System.Windows.Forms.TextBox 
+        #$txtpolicydescription.Location = New-Object System.Drawing.Point(90,39) 
+        #$txtpolicydescription.Size = New-Object System.Drawing.Size(300,15)
+        #$txtpolicydescription.Text = $Policydescription
+
+
+        $PolicyEnableState = New-Object System.Windows.Forms.checkbox
+		$PolicyEnableState.Location =  New-Object System.Drawing.Point(90,39) 
+		$PolicyEnableState.Size = New-Object System.Drawing.Size(300,17)
+        if ($PolicyEnable -eq 1) {  $PolicyEnableState.Checked = $true} else { $PolicyEnableState.Checked = $false}
+		$PolicyEnableState.Text = ""
+        #$PolicyEnableState.Add_CheckStateChanged({if ($PolicyEnable.Checked -eq $true){$txtdefaultprinter.Enabled = $true} else {$txtdefaultprinter.Enabled = $false}}) 
   
 
   		$ConditionPrinterName = New-Object System.Windows.Forms.checkbox
@@ -2159,7 +2169,7 @@ $AdvListViewItem.Subitems.Add($global:Advsecpath[$counter]) | Out-Null
 		$ActionDeletePrinter.Location = New-Object System.Drawing.Size(5,555)
 		$ActionDeletePrinter.Size = New-Object System.Drawing.Size(300,17)
         $ActionDeletePrinter.Text = "Delete"
-       
+         if ($ActDeletePrinter -eq 1) {  $ActionDeletePrinter.Checked = $true} else { $ActionDeletePrinter.Checked = $false}
 
         #$txtdeleteprinter = New-Object System.Windows.Forms.TextBox 
         #$txtdeleteprinter.Location = New-Object System.Drawing.Point(325,195) 
@@ -2188,7 +2198,7 @@ $AdvListViewItem.Subitems.Add($global:Advsecpath[$counter]) | Out-Null
         $frmPolicyManagement.Controls.Add($labelPolicyName)
         $frmpolicymanagement.Controls.Add($txtpolicyname)
         $frmPolicyManagement.Controls.Add($labelPolicyDescription)
-        $frmPolicyManagement.Controls.Add($txtpolicydescription)
+        $frmPolicyManagement.Controls.Add($PolicyEnableState)
         $frmPolicyManagement.Controls.Add($labelConditions)
         $frmPolicyManagement.Controls.Add($ConditionPrinterName)
         $frmPolicyManagement.Controls.Add($txtPrinterNames)
@@ -2261,7 +2271,7 @@ if ($ActionSetDefault.Checked -eq $true){$ActSetDefault = 1} else {$ActSetDefaul
 if ($ActionDeletePrinter.Checked -eq $true){$ActDeletePrinter = 1} else {$ActDeletePrinter = 0}
 if ($ActionRenamePrinter.Checked -eq $true){$ActRename = 1} else {$ActRename = 0}
 if ($ActionRecreatePrinter.Checked -eq $true){$ActRecreate = 1} else {$ActRecreate = 0}
-
+if ($PolicyEnableState.Checked -eq $true){$policyenabled = 1} else {$policyenabled = 0}
 #ConditionPrinterUser
 if ($renamepolicy -eq $true){
 $oldpath = "HKLM:\SOFTWARE\Printerceptor\AdvancedPolicy\" + $policyname 
@@ -2393,7 +2403,7 @@ $previoususers = $ActiveUsers
 	$LoadNameFormat = Get-ItemProperty -Path $key -Name "NamingFormat" | foreach { $_.NamingFormat } 
 	$LoadRedirectedExpression = Get-ItemProperty -Path $key -Name "RedirectedExpression" | foreach { $_.RedirectedExpression } 
     $ActSetDefault = 0
-    $ActDeletePrinter = 0
+    $ActDeletePrinter = $null
     $Avancedpolicy = $false
 
 
@@ -2458,8 +2468,8 @@ $PrinterLoopStart = Get-Date
 	foreach ($Printer in $Printers)
 	{
 
-	if(($Printer.name -match $LoadRedirectedExpression) -and ($Printer.DriverName -notmatch "Fax") -and ($Printer.DriverName -notmatch "Microsoft"))  {
-	# -and ($Printer.DriverName -ne "Remote Desktop Easy Print")
+	if(($Printer.name -match $LoadRedirectedExpression) -and ($Printer.DriverName -notmatch "Fax") -and ($Printer.DriverName -notmatch "Microsoft")  -and ($Printer.DriverName -ne "Remote Desktop Easy Print"))  {
+	
 	#Logging
 	$Source = $Printer.name
 	
@@ -2572,7 +2582,7 @@ $PrinterLoopStart = Get-Date
                 [array]$global:ADVsecpath = Get-ItemProperty -Path $path -Name "secpath" | select -ExpandProperty Secpath
             $conditionsrequired = 0
             $conditionsmet = 0
-           
+           $renameoverride = $false
 
 
 
@@ -2614,12 +2624,13 @@ $PrinterLoopStart = Get-Date
             if ($CondPrinterDriver -eq 1)
             {
                 $conditionsrequired++
+                 
                     foreach($drivername in $CondPrinterDriverSelection)
                     {
                         if ($printer.drivername -eq $drivername)
                         {
                         $conditionsmet++
-                        #write-host $printer.name
+                        write-host $printer.name
 
                         break
                         }
@@ -2662,17 +2673,26 @@ $PrinterLoopStart = Get-Date
 
 
             }
-
+            
         #If the policy applies
         if (($conditionsmet -eq $conditionsrequired) -and ($conditionsrequired -ne 0)) 
         { 
           #determine the actions to take
-           if ($ActRename -eq 1){ $Rename = $true; $NoRename = $false}
+
+
+          if ($ActDeletePrinter -eq 1){ $DeletePrinterAction = $true}
+
+          
+      
+
+
+          $renameoverride = $false
+           if ($ActRename -eq 1){ $Rename = $true; $renameoverride = $true}
         if ($ActRecreate -eq 1){ $Recreate = $true}
 
           #Default Printer Options
           if ($ActSetDefault -eq 1){foreach ($targetprinter in $Printers){if ($targetprinter.name -eq $ActDefaultPrinterSelection) {$targetdefaultprinter = $targetprinter.name; Write-Host Targeted default $targetprinter.name; $advDefaultPrinter = $targetprinter.name + "," + "winspool" + "," + $targetprinter.PortName }}}
-          write-host $policy applies; break;
+          write-host $policy appActDeletePrinterlies; break;
         }
 
 
@@ -2681,13 +2701,13 @@ $PrinterLoopStart = Get-Date
         
        
 
-
         #########################
 
 
 		#Renames the printer if that is all it should do
-		  if (($Rename -eq $True) -and ($Recreate -eq $False) -and ($NoRename -ne $true))
+		  if (($Rename -eq $True) -and ($Recreate -eq $False) -and (($NoRename -ne $true) -or ($renameoverride -eq $true)))
 		  {
+
 			# Delete Printer if the new name already exists. May occur if the redirected printers havn't unloaded from previous session
 			#foreach ($printitem in $Printers){if (($printitem.Name -eq $NewName) -or ($printitem.Parameters -eq $identity -or ($printitem.Parameters -eq $identity + "Renamed"))) {$printitem.delete()}}
 			#Rename the printer and add identity tag to paramenters
@@ -2697,6 +2717,7 @@ $PrinterLoopStart = Get-Date
 			foreach ($printitem in $Printers)
 			{
 				if (($printitem.Name -eq $NewName) -or ($printitem.Parameters -eq $identity) -or ($printitem.Parameters -eq $identity + "rename")) {
+         
 				$printitem.delete()
 				}
 				}
@@ -2709,6 +2730,10 @@ $PrinterLoopStart = Get-Date
 			$Operation = "Rename Only"
 			$TargetPort = $Printer.portname
 			$PrinterCount++
+
+if ($renameoverride -eq $true) {$break;}
+
+
 		  }
 		  
 		  
@@ -2728,7 +2753,7 @@ $PrinterLoopStart = Get-Date
                                         
 					
 					$TargetType = "Existing - " + $printitem.name
-					$Printer.delete()
+					
 					if ($printitem.comment -ne "#"){
 					$printitem.PortName = $Printer.PortName
                     $printitem.comment = ""
@@ -2737,6 +2762,7 @@ $PrinterLoopStart = Get-Date
 					$Operation = "Full Access"
 					$printitem.WorkOffline = $false
 					$printitem.put()
+                    $Printer.delete()
 						$Users = @($user,'system')
 								
 		
@@ -2819,7 +2845,7 @@ $PrinterLoopStart = Get-Date
 					{ 
 				   	
 					   #Don't  set the default if printer isn't to be renamed or set to be recreated
-					   if (($Rename -eq $false) -or (($NoRename -eq $true) -and ($recreate -eq $false)))  { } else 
+					   if (($Rename -eq $false) -or ($NoRename -eq $true) -and (($recreate -eq $false) -and ($renameoverride -ne $true)))  { } else 
 					   {
 					   		$TargetDefault = "Yes"
 					   		$Key  = Get-ChildItem $regpath | foreach { $_.PSChildName } 
@@ -2841,9 +2867,6 @@ $PrinterLoopStart = Get-Date
              }
 
 
-             if ($ActDeletePrinter -eq 1){
-             $printer.delete()
-             }
 
 		}#End of if statement for when printer is redirected
 		
@@ -2865,6 +2888,10 @@ $PrinterLoopStart = Get-Date
  $TargetType = ""
  $TargetPort = ""
  
+       if ($DeletePrinterAction -eq $true){
+             $printer.delete()
+             $DeletePrinterAction = $false
+             }
 
 
 
