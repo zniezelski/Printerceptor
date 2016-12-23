@@ -403,14 +403,20 @@ copy-item -Path HKLM:\SOFTWARE\Printerceptor\Active\AdvancedPolicy -Destination 
         }
         & $CheckAdvancedPolicyExistance
 
+   
+        
 		$ButtonRestrictions = New-Object System.Windows.Forms.Button
 		$ButtonRestrictions.location = New-Object System.Drawing.Point(375,445)
 		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
 		#$ButtonRestrictions.Font = $FontBold
 		$ButtonRestrictions.Size = New-Object System.Drawing.Size(125, 20)
 		$ButtonRestrictions.Text = "Restrictions"
+        $CheckRestrictionExistance = {
+        if ($global:ScopeAll -eq "No"){$ButtonRestrictions.font = $FontBold} else {$ButtonRestrictions.font = $null}
+        }
+        & $CheckRestrictionExistance
 		$Form.Controls.Add($ButtonRestrictions)
-
+        
 
 
 
@@ -1268,7 +1274,7 @@ $ListViewItem.Subitems.Add($global:secpath[$counter]) | Out-Null
         foreach($item in $ObjectList.items) {$global:secname+= @($item.subitems[0].text); $global:sectype+= @($item.subitems[1].text); $global:secsid+= @($item.subitems[2].text); $global:secpath+= @($item.subitems[3].text); }
 
 
-
+ & $CheckRestrictionExistance
          $frmrestrictions.close() 
 
 
@@ -1701,7 +1707,7 @@ $frmAdvancedPolicy.Controls.Add($AdvancedPolicyDelete)
 $frmAdvancedPolicy.Controls.Add($AdvancedPolicyOk)
 #$frmAdvancedPolicy.Controls.Add($AdvancedPolicyDown)
 $AdvancedPolicyAdd.add_Click({
-$policyaction = "Add"
+$policyaction = "add"
 & $scriptblock
 
 })
@@ -1786,6 +1792,7 @@ $scriptblock =
         $txtpolicydescription = Get-ItemProperty -Path $key -Name "Description" | select -ExpandProperty Description
         $CondPrinterName = Get-ItemProperty -Path $key -Name "CondPrinterName" | select -ExpandProperty CondPrinterName
         $CondPrinterDriver = Get-ItemProperty -Path $key -Name "CondPrinterDriver" | select -ExpandProperty CondPrinterDriver
+        $CondPrinterIsDefault = Get-ItemProperty -Path $key -Name "CondPrinterIsDefault" | select -ExpandProperty CondPrinterIsDefault
         $CondPrinterUser = Get-ItemProperty -Path $key -Name "CondPrinterUser" | select -ExpandProperty CondPrinterUser
         $ActSetDefault = Get-ItemProperty -Path $key -Name "ActSetDefault" | select -ExpandProperty ActSetDefault
         $ActDeletePrinter = Get-ItemProperty -Path $key -Name "ActDeletePrinter" | select -ExpandProperty ActDeletePrinter
@@ -1804,12 +1811,12 @@ $scriptblock =
         $policyenabled = Get-ItemProperty -Path $key -Name "enabled" | select -ExpandProperty enabled
         $PolicyEnable = $policyenabled
 
-#load security objects
+
         [array]$global:AdvSecName = Get-ItemProperty -Path $key -Name "SecName" | select -ExpandProperty SecName
         [array]$global:Advsectype = Get-ItemProperty -Path $key -Name "sectype" | select -ExpandProperty sectype
         [array]$global:Advsecsid = Get-ItemProperty -Path $key -Name "SecSID" | select -ExpandProperty SecSID 
         [array]$global:Advsecpath = Get-ItemProperty -Path $key -Name "SecPath" | select -ExpandProperty SecPath
-
+        
 
         }
         $frmPolicyManagement = new-object system.windows.forms.form
@@ -1917,7 +1924,15 @@ $scriptblock =
         $ConditionPrinterClient.Add_CheckStateChanged({if ($ConditionPrinterClient.Checked -eq $true){$txtprinterclient.Enabled = $true} else {$txtprinterclient.Enabled = $false}})
 
 
+        #printer is a default
 
+        $ConditionPrinterIsDefault = New-Object System.Windows.Forms.checkbox
+		$ConditionPrinterIsDefault.Location = New-Object System.Drawing.Size(5,398)
+		$ConditionPrinterIsDefault.Size = New-Object System.Drawing.Size(300,17)
+		$ConditionPrinterIsDefault.Text = "Printer is set as default"
+        if ($CondPrinterIsDefault -eq 1) {  $ConditionPrinterIsDefault.Checked = $true} else { $ConditionPrinterIsDefault.Checked = $false}
+       
+        ###
         $txtprinterclient = New-Object System.Windows.Forms.listview 
         $txtprinterclient.Location = New-Object System.Drawing.Point(329,140) 
         $txtprinterclient.Size = New-Object System.Drawing.Size(300,100)
@@ -2024,7 +2039,7 @@ $AdvListViewItem.Subitems.Add($DialogPicker.Selectedobject.SchemaClassName) | Ou
 $AdvListViewItem.Subitems.Add($stringSID) | Out-Null
 if ($DialogPicker.SelectedObject.Path -match 'LDAP://'){$path = "AD"} else {$path = "Local"}
 $ListViewItem.Subitems.Add($path) | Out-Null
-           $AdvObjectList.items.add($AdvListViewItem) | out-null
+           $AdvObjectList.items.add($AdvListViewItem) 
 
 }
 return $DialogPicker.Selectedobject.Name
@@ -2065,6 +2080,8 @@ return $DialogPicker.Selectedobject.Name
 
 
 $Counter = -1
+
+if ($policyaction -eq "edit"){
 foreach ($item in $global:Advsecname) {
 $Counter++
 
@@ -2093,7 +2110,7 @@ $AdvListViewItem.Subitems.Add($global:Advsecsid[$Counter]) | Out-Null
 $AdvListViewItem.Subitems.Add($global:Advsecpath[$counter]) | Out-Null
          $AdvObjectList.items.Add($AdvListViewItem) | Out-Null
            }
-
+}
 
 ###
 
@@ -2133,7 +2150,7 @@ $AdvListViewItem.Subitems.Add($global:Advsecpath[$counter]) | Out-Null
 
         #Actions
 		$labelActions = New-Object System.Windows.Forms.Label
-		$labelActions.location = New-Object System.Drawing.Point(5, 410)
+		$labelActions.location = New-Object System.Drawing.Point(5, 420)
 		$labelActions.Size = New-Object System.Drawing.Size(70, 15)
 		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
 		$labelActions.Font = $FontBold
@@ -2205,6 +2222,7 @@ $AdvListViewItem.Subitems.Add($global:Advsecpath[$counter]) | Out-Null
 
 
 $frmPolicyManagement.Controls.Add($ConditionPrinterDriver)
+$frmPolicyManagement.Controls.Add($ConditionPrinterIsDefault)
         $frmPolicyManagement.Controls.Add($txtPrinterDrivers)
         $frmPolicyManagement.Controls.Add($ConditionPrinterClient)
         $frmPolicyManagement.Controls.Add($txtprinterclient)
@@ -2264,6 +2282,7 @@ if ($halt -eq $false){
 
 
 if ($ConditionPrinterName.Checked -eq $true){ $CondPrinterName = 1} else {$CondPrinterName = 0}
+if ($ConditionPrinterIsDefault.Checked -eq $true){ $CondPrinterIsDefault = 1} else {$CondPrinterIsDefault = 0}
 if ($ConditionPrinterUser.Checked -eq $true){ $CondPrinterUser = 1} else {$CondPrinterUser = 0}
 if ($ConditionPrinterDriver.Checked -eq $true){$CondPrinterDriver = 1} else {$CondPrinterDriver = 0}
 if ($ConditionPrinterClient.Checked -eq $true){$CondPrinterClient = 1} else {$CondPrinterClient = 0}
@@ -2289,6 +2308,7 @@ New-ItemProperty -Path $PolicyPath -Name "ActDefaultPrinterSelection" -Value $tx
 New-ItemProperty -Path $PolicyPath -Name "ActDeletePrinterSelection" -Value $txtdeleteprinter.Text -PropertyType "string" -Force
 New-ItemProperty -Path $PolicyPath -Name "ActSetDefault" -Value $ActSetDefault -PropertyType "dword" -Force
 New-ItemProperty -Path $PolicyPath -Name "ActDeletePrinter" -Value $ActDeletePrinter -PropertyType "dword" -Force
+New-ItemProperty -Path $PolicyPath -Name "CondPrinterIsDefault" -Value $CondPrinterIsDefault -PropertyType "dword" -Force
 New-ItemProperty -Path $PolicyPath -Name "CondPrinterNameSelection" -Value $txtPrinterNames.Text -PropertyType "multistring" -Force
 New-ItemProperty -Path $PolicyPath -Name "CondPrinterDriverSelection" -Value $CondPrinterDriverSelectionOutput -PropertyType "multistring" -Force
 New-ItemProperty -Path $PolicyPath -Name "CondPrinterClientSelection" -Value $CondPrinterClientSelectionOutput -PropertyType "multistring" -Force
@@ -2305,12 +2325,12 @@ New-ItemProperty -Path $PolicyPath -Name "enabled" -Value $policyenabled -Proper
 
 
         #Save restriction Information
-        New-ItemProperty -Path $key -Name "ScopeAll" -Value $global:AdvScopeAll  -PropertyType "multistring" -Force
-        New-ItemProperty -Path $key -Name "Scope" -Value $global:AdvScope  -PropertyType "multistring"  -Force
-        New-ItemProperty -Path $key -Name "SecName" -Value $global:Advsecname  -PropertyType "multistring" -Force
-        New-ItemProperty -Path $key -Name "sectype" -Value $global:Advsectype  -PropertyType "multistring" -Force
-        New-ItemProperty -Path $key -Name "SecSID" -Value $global:Advsecsid  -PropertyType "multistring" -Force
-       New-ItemProperty -Path $key -Name "SecPath" -Value $global:Advsecpath  -PropertyType "multistring" -Force
+        New-ItemProperty -Path $PolicyPath -Name "ScopeAll" -Value $global:AdvScopeAll  -PropertyType "multistring" -Force
+        New-ItemProperty -Path $PolicyPath -Name "Scope" -Value $global:AdvScope  -PropertyType "multistring"  -Force
+        New-ItemProperty -Path $PolicyPath -Name "SecName" -Value $global:Advsecname  -PropertyType "multistring" -Force
+        New-ItemProperty -Path $PolicyPath -Name "sectype" -Value $global:Advsectype  -PropertyType "multistring" -Force
+        New-ItemProperty -Path $PolicyPath -Name "SecSID" -Value $global:Advsecsid  -PropertyType "multistring" -Force
+       New-ItemProperty -Path $PolicyPath -Name "SecPath" -Value $global:Advsecpath  -PropertyType "multistring" -Force
 
 
 & $loadpolicy
@@ -2407,8 +2427,7 @@ $previoususers = $ActiveUsers
     $Avancedpolicy = $false
 
 
- #See if only drivers set for recreation should be renamed
-	foreach ($item in $LoadDoNotRenList){if ($item -eq "Non Full Access Enabled") { $NoRename = $true; break;}}
+
 
 
 #Restriction Loading
@@ -2467,7 +2486,8 @@ $PrinterLoopStart = Get-Date
 	$PrinterCount = 0
 	foreach ($Printer in $Printers)
 	{
-
+ #See if only drivers set for recreation should be renamed
+	foreach ($item in $LoadDoNotRenList){if ($item -eq "Non Full Access Enabled") { $NoRename = $true; break;}}
 	if(($Printer.name -match $LoadRedirectedExpression) -and ($Printer.DriverName -notmatch "Fax") -and ($Printer.DriverName -notmatch "Microsoft")  -and ($Printer.DriverName -ne "Remote Desktop Easy Print"))  {
 	
 	#Logging
@@ -2567,6 +2587,7 @@ $PrinterLoopStart = Get-Date
             $CondPrinterClient = Get-ItemProperty -Path $path -Name "CondPrinterClient" | foreach { $_.CondPrinterClient }  
              $CondPrinterUser = Get-ItemProperty -Path $path -Name "CondPrinterUser" | foreach { $_.CondPrinterUser }  
             $CondPrinterDriver = Get-ItemProperty -Path $path -Name "CondPrinterDriver" | foreach { $_.CondPrinterDriver }  
+            $CondPrinterIsDefault = Get-ItemProperty -Path $path -Name "CondPrinterIsDefault" | foreach { $_.CondPrinterIsDefault }  
             $CondPrinterNameSelection = Get-ItemProperty -Path $path -Name "CondPrinterNameSelection" | foreach { $_.CondPrinterNameSelection }
              $CondPrinterClientSelection = Get-ItemProperty -Path $path -Name "CondPrinterClientSelection" | foreach { $_.CondPrinterClientSelection }
             $CondPrinterDriverSelection = Get-ItemProperty -Path $path -Name "CondPrinterDriverSelection" | foreach { $_.CondPrinterDriverSelection }  
@@ -2599,6 +2620,16 @@ $PrinterLoopStart = Get-Date
 
                 }
 
+            }
+
+            if ($CondPrinterIsDefault -eq 1)
+            {
+     
+                $conditionsrequired++
+                       	$UnchangedValue = $Printer.name + "," + "winspool" + "," + $Printer.PortName
+				   $SessionDefault = Get-ItemProperty -Path $regpath -Name "Device" | foreach { $_.Device }
+				 #See if printers original name was the user's default printer
+				  	 if ($UnchangedValue -eq $SessionDefault) { $conditionsmet++} 
             }
 
             if ($CondPrinterName -eq 1)
@@ -2673,13 +2704,16 @@ $PrinterLoopStart = Get-Date
 
 
             }
-            
+    
         #If the policy applies
         if (($conditionsmet -eq $conditionsrequired) -and ($conditionsrequired -ne 0)) 
         { 
+
+        $rename = $false
+        $recreate = $False
           #determine the actions to take
-
-
+         if ($ActSetDefault -eq 1){$shiftdelete = $true; $Makethisprinterdefat = $ActDefaultPrinterSelection; add-content C:\test.txt "apples";}
+         add-content C:\test.txt "apples fuck"
           if ($ActDeletePrinter -eq 1){ $DeletePrinterAction = $true}
 
           
@@ -2687,27 +2721,28 @@ $PrinterLoopStart = Get-Date
 
 
           $renameoverride = $false
-           if ($ActRename -eq 1){ $Rename = $true; $renameoverride = $true}
+           if ($ActRename -eq 1){ $renameoverride = $true; $Recreate = $False; $Rename = $true; $NoRename = $False }
         if ($ActRecreate -eq 1){ $Recreate = $true}
 
           #Default Printer Options
-          if ($ActSetDefault -eq 1){foreach ($targetprinter in $Printers){if ($targetprinter.name -eq $ActDefaultPrinterSelection) {$targetdefaultprinter = $targetprinter.name; Write-Host Targeted default $targetprinter.name; $advDefaultPrinter = $targetprinter.name + "," + "winspool" + "," + $targetprinter.PortName }}}
-          write-host $policy appActDeletePrinterlies; break;
+          #if ($ActSetDefault -eq 1){foreach ($targetprinter in $Printers){if ($targetprinter.name -eq $ActDefaultPrinterSelection) {$targetdefaultprinter = $targetprinter.name; Write-Host Targeted default $targetprinter.name; $advDefaultPrinter = $targetprinter.name + "," + "winspool" + "," + $targetprinter.PortName }}}
+          #write-host $policy appActDeletePrinterlies; break;
+          break;
         }
 
 
-        }
-        if ($ActSetDefault -eq 1){"still 1"}
-        
+        } 
+
        
+    
+      if ($conditionsrequired -eq $null) {$conditionsrequired = 45444}
 
-        #########################
 
-
+       
 		#Renames the printer if that is all it should do
-		  if (($Rename -eq $True) -and ($Recreate -eq $False) -and (($NoRename -ne $true) -or ($renameoverride -eq $true)))
+		  if (($Rename -eq $True) -and ($Recreate -eq $False) -and (($NoRename -ne $true) -or ($renameoverride -eq  $true)))
 		  {
-
+          add-content C:\test.txt "fuck you harder";
 			# Delete Printer if the new name already exists. May occur if the redirected printers havn't unloaded from previous session
 			#foreach ($printitem in $Printers){if (($printitem.Name -eq $NewName) -or ($printitem.Parameters -eq $identity -or ($printitem.Parameters -eq $identity + "Renamed"))) {$printitem.delete()}}
 			#Rename the printer and add identity tag to paramenters
@@ -2731,17 +2766,20 @@ $PrinterLoopStart = Get-Date
 			$TargetPort = $Printer.portname
 			$PrinterCount++
 
-if ($renameoverride -eq $true) {$break;}
+#if ($renameoverride -eq $true) {Add-Content C:\text.txt "shit"; $break; }
 
 
 		  }
+		   $recreateabort = $false
 		  
-		  
-		
+		  if (($conditionsmet -eq $conditionsrequired) -and ($ActRecreate -ne $true)){ $recreateabort = $true}
 		  ##see if printer already exists indicating that it has been created already and doesn't need created. If it doesn't then it sets the queue settings
 		$AlreadyExists = $false
+ if (($conditionsrequired -eq $conditionsmet) -and ($ActRecreate -ne $true) -and ($recreateabort -ne $true)) { add-content C:\test.txt "fucked"; $Recreate = $false}
 		if ($Recreate -eq $true)
+         
 		{
+           
 			foreach ($printitem in $Printers)
 			{
 				if ($printitem.Parameters -eq $identity + "rename"){ $AlreadyExists = $false; $printitem.delete(); break;}
@@ -2782,8 +2820,9 @@ if ($renameoverride -eq $true) {$break;}
 
 		#if the printer doesn't already exist, make a new queue
 
-		if ($Recreate -eq $True) 
+		if (($Recreate -eq $True) -and ($recreateabort -ne $true)) 
 		{
+       
             $Rename = $true
 			#Remove dedirectd printer
 			$Printer.delete()
@@ -2831,7 +2870,7 @@ if ($renameoverride -eq $true) {$break;}
 			} #End of printer creation
 			
 			
-			
+
 		  	#Setup default printer format for registry
 					  if ($Recreate -eq $True) { $Value = $NewName + "," + "winspool" + "," + "COM1:"}
 		  
@@ -2854,19 +2893,34 @@ if ($renameoverride -eq $true) {$break;}
 					   }
 				   
 				   } else {$TargetDefault = "No"}
-			
+			  
+
+
 
             #advanced policy action	   
             #set default according to advanced policy
-             if ($ActSetDefault -eq 1) 
+             if ($shiftdelete -eq $true) 
              { 
+             $ActDefaultPrinterSelection = $Makethisprinterdefat
+            foreach ($targetprinter in $Printers){if ($targetprinter.name -eq $ActDefaultPrinterSelection) {$targetdefaultprinter = $targetprinter.name; Write-Host Targeted default $targetprinter.name; $advDefaultPrinter = $targetprinter.name + "," + "winspool" + "," + $targetprinter.PortName; break; }}
+            Add-Content c:\test.txt "fuck this shiat"
+            Add-Content c:\test.txt $ActDefaultPrinterSelection
                 $value = $advDefaultPrinter
                 $Key  = Get-ChildItem $regpath | foreach { $_.PSChildName } 
 							$thedefault = $Value
 						 	 New-ItemProperty -Path $regpath -Name "Device" -Value $Value -PropertyType "string" -Force
+                    
+                    Add-Content c:\test.txt $Value
+                    $ActSetDefault = $false
+                   $shiftdelete = $false
+                    #break;
              }
 
-
+         #########################
+    			  if ($DeletePrinterAction -eq $true){
+             $printer.delete()
+             $DeletePrinterAction = $false
+             }
 
 		}#End of if statement for when printer is redirected
 		
@@ -2888,10 +2942,7 @@ if ($renameoverride -eq $true) {$break;}
  $TargetType = ""
  $TargetPort = ""
  
-       if ($DeletePrinterAction -eq $true){
-             $printer.delete()
-             $DeletePrinterAction = $false
-             }
+  
 
 
 
