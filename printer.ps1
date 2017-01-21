@@ -56,6 +56,7 @@ $result = [System.Windows.Forms.MessageBox]::Show($message, 'Warning', 'ok', 'Wa
         [array]$global:sectype = Get-ItemProperty -Path $key -Name "sectype" | select -ExpandProperty sectype
         [array]$global:secsid = Get-ItemProperty -Path $key -Name "SecSID" | select -ExpandProperty SecSID 
         [array]$global:secpath = Get-ItemProperty -Path $key -Name "SecPath" | select -ExpandProperty SecPath
+         $noexitsave = Get-ItemProperty -Path $key -Name "NoExitSave" | foreach { $_.NoExitSave }
         #copy policy keys
 remove-item -Path HKLM:\SOFTWARE\Printerceptor\AdvancedPolicy -Force -Recurse
 copy-item -Path HKLM:\SOFTWARE\Printerceptor\Active\AdvancedPolicy -Destination HKLM:\SOFTWARE\Printerceptor -Recurse 
@@ -442,7 +443,7 @@ copy-item -Path HKLM:\SOFTWARE\Printerceptor\Active\AdvancedPolicy -Destination 
    $OptionsLabel.add_click({
         $frmoptions = new-object system.windows.forms.form
 		$frmoptions.width = 350
-		$frmoptions.height = 345
+		$frmoptions.height = 365
 		$frmoptions.MaximizeBox = $false
 		$frmoptions.formborderstyle="FixedDialog"
 		$frmoptions.text = "Printerceptor Options"
@@ -516,15 +517,16 @@ copy-item -Path HKLM:\SOFTWARE\Printerceptor\Active\AdvancedPolicy -Destination 
         $global:txtquerytime.Text = $RegAdditionalTime
 
 
-        $lbltask = New-Object System.Windows.Forms.Label
-		$lbltask.location = New-Object System.Drawing.Point(8,174)
-		$lbltask.Size = New-Object System.Drawing.Size(260, 15)
-		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
-		$lbltask.Font = $FontBold
-		$lbltask.Text = "Scheduled Task State and Control:"
+       # create your checkbox 
+    $checkboxnosaveexit = new-object System.Windows.Forms.checkbox
+    $checkboxnosaveexit.Location = new-object System.Drawing.Size(10,162)
+    $checkboxnosaveexit.Size = new-object System.Drawing.Size(250,50)
+    $checkboxnosaveexit.Text = "Don't exit when saving. Just inform."
+   $noexitsave = Get-ItemProperty -Path $key -Name "NoExitSave" | foreach { $_.NoExitSave }
+    if ($noexitsave -eq "1") { $checkboxnosaveexit.Checked = $True} else { $checkboxnosaveexit.Checked = $false }
 
 $groupBox = New-Object System.Windows.Forms.GroupBox #create the group box
-$groupBox.Location = New-Object System.Drawing.Size(8,174) #location of the group box (px) in relation to the primary window's edges (length, height)
+$groupBox.Location = New-Object System.Drawing.Size(8,205) #location of the group box (px) in relation to the primary window's edges (length, height)
 $groupBox.size = New-Object System.Drawing.Size(318,90) #the size in px of the group box (length, height)
 $groupBox.text = "Scheduled Task State and Control:" #labeling the box
 
@@ -789,7 +791,7 @@ $global:lbltaskstatesuffix.Text = $tasks
         
 
         $ButtonSaveOpt = New-Object System.Windows.Forms.Button
-		$ButtonSaveOpt.location = New-Object System.Drawing.Point(245,280)
+		$ButtonSaveOpt.location = New-Object System.Drawing.Point(245,300)
 		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
 		#$ButtonSave.Font = $FontBold
 		$ButtonSaveOpt.Size = New-Object System.Drawing.Size(80, 20)
@@ -801,15 +803,16 @@ $global:lbltaskstatesuffix.Text = $tasks
         set-ItemProperty -Path $key -Name "LogViewer" -Value $global:txtlogviewer.Text -Force
         set-ItemProperty -Path $key -Name "Rounds" -Value $global:txtrounds.Text -Force
         set-ItemProperty -Path $key -Name "AdditionalTime" -Value $global:txtquerytime.text -Force
-
-        
-        
+        if ($checkboxnosaveexit.Checked -eq $false) { $noexitsave = "0"} 
+        if ($checkboxnosaveexit.Checked -eq $True) {$noexitsave = "1"}
+        set-ItemProperty -Path $key -Name "NoExitSave" -Value $noexitsave -Force
         $frmoptions.close()
+
         
         })
 
         $ButtonDiscardOpt = New-Object System.Windows.Forms.Button
-		$ButtonDiscardOpt.location = New-Object System.Drawing.Point(160,280)
+		$ButtonDiscardOpt.location = New-Object System.Drawing.Point(160,300)
 		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
 		#$ButtonSave.Font = $FontBold
 		$ButtonDiscardOpt.Size = New-Object System.Drawing.Size(80, 20)
@@ -819,7 +822,7 @@ $global:lbltaskstatesuffix.Text = $tasks
         $ButtonDiscardOpt.add_click({ $frmoptions.close()})
 
        $ButtonDefault = New-Object System.Windows.Forms.Button
-		$ButtonDefault.location = New-Object System.Drawing.Point(35,280)
+		$ButtonDefault.location = New-Object System.Drawing.Point(35,300)
 		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
 		#$ButtonDefault.Font = $FontBold
 		$ButtonDefault.Size = New-Object System.Drawing.Size(120, 20)
@@ -877,7 +880,8 @@ $global:lbltaskstatesuffix.Text = $tasks
         $frmoptions.Controls.Add($lblquerytime)
         $frmoptions.Controls.Add($global:txtquerytime)
         $frmoptions.Controls.Add($lbltask)
-
+        $frmoptions.Controls.Add($checkboxnosaveexit)
+        
         $ButtonEnd.add_click({schtasks /end /tn Printerceptor })
         $ButtonRun.add_click({schtasks /run /tn Printerceptor })
 
@@ -1459,17 +1463,23 @@ $MyTask.Enabled = $true
 
 		#Save RedirectedExpression
 		set-ItemProperty -Path $key -Name "RedirectedExpression" -Value $comboBox2.Text -Force
-
-		[environment]::exit(0)
+         $noexitsave = Get-ItemProperty -Path $key -Name "NoExitSave" | foreach { $_.NoExitSave }
+		     if ($noexitsave -eq "0"){[environment]::exit(0)}
+       if ($noexitsave -eq "1")
+       {
+       
+     [System.Windows.Forms.MessageBox]::Show("Changes have been saved and are active.") 
+       
+       }
 
 		})
 
+$Form.add_Closed({ [environment]::exit(0) }) 
+
+  
 
 
-
-
-
-		 $Form.add_Closed({ [environment]::exit(0) })
+		 
 
 
 
@@ -2172,7 +2182,7 @@ $AdvListViewItem.Subitems.Add($global:Advsecpath[$counter]) | Out-Null
 		$ActionSetDefault.Location = New-Object System.Drawing.Size(5,500)
 		$ActionSetDefault.Size = New-Object System.Drawing.Size(300,17)
         if ($ActSetDefault -eq 1) {  $ActionSetDefault.Checked = $true} else { $ActionSetDefault.Checked = $false}
-		$ActionSetDefault.Text = "If default, shift default to:"
+		$ActionSetDefault.Text = "Set printer with following name as default:"
         $ActionSetDefault.Add_CheckStateChanged({if ($ActionSetDefault.Checked -eq $true){$txtdefaultprinter.Enabled = $true} else {$txtdefaultprinter.Enabled = $false}}) 
         
         $txtdefaultprinter = New-Object System.Windows.Forms.TextBox 
@@ -2335,6 +2345,8 @@ New-ItemProperty -Path $PolicyPath -Name "enabled" -Value $policyenabled -Proper
 
 & $loadpolicy
 $frmPolicyManagement.close()
+ 
+
 }
 
 
@@ -2712,8 +2724,8 @@ $PrinterLoopStart = Get-Date
         $rename = $false
         $recreate = $False
           #determine the actions to take
-         if ($ActSetDefault -eq 1){$shiftdelete = $true; $Makethisprinterdefat = $ActDefaultPrinterSelection; add-content C:\test.txt "apples";}
-         add-content C:\test.txt "apples fuck"
+         if ($ActSetDefault -eq 1){$shiftdelete = $true; $Makethisprinterdefat = $ActDefaultPrinterSelection;}
+       
           if ($ActDeletePrinter -eq 1){ $DeletePrinterAction = $true}
 
           
@@ -2742,7 +2754,7 @@ $PrinterLoopStart = Get-Date
 		#Renames the printer if that is all it should do
 		  if (($Rename -eq $True) -and ($Recreate -eq $False) -and (($NoRename -ne $true) -or ($renameoverride -eq  $true)))
 		  {
-          add-content C:\test.txt "fuck you harder";
+          
 			# Delete Printer if the new name already exists. May occur if the redirected printers havn't unloaded from previous session
 			#foreach ($printitem in $Printers){if (($printitem.Name -eq $NewName) -or ($printitem.Parameters -eq $identity -or ($printitem.Parameters -eq $identity + "Renamed"))) {$printitem.delete()}}
 			#Rename the printer and add identity tag to paramenters
@@ -2766,7 +2778,6 @@ $PrinterLoopStart = Get-Date
 			$TargetPort = $Printer.portname
 			$PrinterCount++
 
-#if ($renameoverride -eq $true) {Add-Content C:\text.txt "shit"; $break; }
 
 
 		  }
@@ -2903,14 +2914,14 @@ $PrinterLoopStart = Get-Date
              { 
              $ActDefaultPrinterSelection = $Makethisprinterdefat
             foreach ($targetprinter in $Printers){if ($targetprinter.name -eq $ActDefaultPrinterSelection) {$targetdefaultprinter = $targetprinter.name; Write-Host Targeted default $targetprinter.name; $advDefaultPrinter = $targetprinter.name + "," + "winspool" + "," + $targetprinter.PortName; break; }}
-            Add-Content c:\test.txt "fuck this shiat"
-            Add-Content c:\test.txt $ActDefaultPrinterSelection
+          
+           
                 $value = $advDefaultPrinter
                 $Key  = Get-ChildItem $regpath | foreach { $_.PSChildName } 
 							$thedefault = $Value
 						 	 New-ItemProperty -Path $regpath -Name "Device" -Value $Value -PropertyType "string" -Force
                     
-                    Add-Content c:\test.txt $Value
+                    
                     $ActSetDefault = $false
                    $shiftdelete = $false
                     #break;
