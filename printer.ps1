@@ -2500,7 +2500,6 @@ $PrinterLoopStart = Get-Date
 	{
  #See if only drivers set for recreation should be renamed
 	foreach ($item in $LoadDoNotRenList){if ($item -eq "Non Full Access Enabled") { $NoRename = $true; break;}}
-	if(($Printer.name -match $LoadRedirectedExpression) -and ($Printer.DriverName -notmatch "Fax") -and ($Printer.DriverName -notmatch "Microsoft")  -and ($Printer.DriverName -ne "Remote Desktop Easy Print"))  {
 	
 	#Logging
 	$Source = $Printer.name
@@ -2750,7 +2749,8 @@ $PrinterLoopStart = Get-Date
       if ($conditionsrequired -eq $null) {$conditionsrequired = 45444}
 
 
-       
+       	if((($Printer.name -match $LoadRedirectedExpression) -and ($Printer.DriverName -notmatch "Fax") -and ($Printer.DriverName -notmatch "Microsoft")  -and ($Printer.DriverName -ne "Remote Desktop Easy Print")) -or (($DeletePrinterAction -eq $true) -and ($Printer.name -match $LoadRedirectedExpression)))  {
+
 		#Renames the printer if that is all it should do
 		  if (($Rename -eq $True) -and ($Recreate -eq $False) -and (($NoRename -ne $true) -or ($renameoverride -eq  $true)))
 		  {
