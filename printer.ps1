@@ -1806,7 +1806,8 @@ $scriptblock =
         $CondPrinterUser = Get-ItemProperty -Path $key -Name "CondPrinterUser" | select -ExpandProperty CondPrinterUser
         $ActSetDefault = Get-ItemProperty -Path $key -Name "ActSetDefault" | select -ExpandProperty ActSetDefault
         $ActDeletePrinter = Get-ItemProperty -Path $key -Name "ActDeletePrinter" | select -ExpandProperty ActDeletePrinter
-        $CondPrinterNameSelection = Get-ItemProperty -Path $key -Name "CondPrinterNameSelection" | select -ExpandProperty CondPrinterNameSelection
+      $CondPrinterNameSelection = @((Get-ItemProperty -Path $key -Name CondPrinterNameSelection).CondPrinterNameSelection)
+        #$CondPrinterNameSelection = @($CondPrinterNameSelection -split “`r`n” )
         $CondPrinterDriverSelection = Get-ItemProperty -Path $key -Name "CondPrinterDriverSelection" | select -ExpandProperty CondPrinterDriverSelection
         $ActDefaultPrinterSelection =  Get-ItemProperty -Path $key -Name "ActDefaultPrinterSelection" | select -ExpandProperty ActDefaultPrinterSelection
         $ActDeletePrinterSelection = Get-ItemProperty -Path $key -Name "ActDeletePrinterSelection" | select -ExpandProperty ActDeletePrinterSelection
@@ -2600,6 +2601,9 @@ $PrinterLoopStart = Get-Date
             $CondPrinterDriver = Get-ItemProperty -Path $path -Name "CondPrinterDriver" | foreach { $_.CondPrinterDriver }  
             $CondPrinterIsDefault = Get-ItemProperty -Path $path -Name "CondPrinterIsDefault" | foreach { $_.CondPrinterIsDefault }  
             $CondPrinterNameSelection = Get-ItemProperty -Path $path -Name "CondPrinterNameSelection" | foreach { $_.CondPrinterNameSelection }
+ 
+      $CondPrinterNameSelection = @((Get-ItemProperty -Path $path -Name CondPrinterNameSelection).CondPrinterNameSelection)
+      $CondPrinterNameSelection = @($CondPrinterNameSelection -split “`r`n” )
              $CondPrinterClientSelection = Get-ItemProperty -Path $path -Name "CondPrinterClientSelection" | foreach { $_.CondPrinterClientSelection }
             $CondPrinterDriverSelection = Get-ItemProperty -Path $path -Name "CondPrinterDriverSelection" | foreach { $_.CondPrinterDriverSelection }  
             $ActDeletePrinter = Get-ItemProperty -Path $path -Name "ActDeletePrinter" | foreach { $_.ActDeletePrinter }  
@@ -2615,7 +2619,7 @@ $PrinterLoopStart = Get-Date
             $conditionsrequired = 0
             $conditionsmet = 0
            $renameoverride = $false
-
+           $appliedpolicy = "General"
 
 
            if ($CondPrinterClient -eq 1)
@@ -2719,7 +2723,7 @@ $PrinterLoopStart = Get-Date
         #If the policy applies
         if (($conditionsmet -eq $conditionsrequired) -and ($conditionsrequired -ne 0)) 
         { 
-
+        $appliedpolicy = $policy
         $rename = $false
         $recreate = $False
           #determine the actions to take
@@ -2924,22 +2928,31 @@ $PrinterLoopStart = Get-Date
                     
                     $ActSetDefault = $false
                    $shiftdelete = $false
+                   $TargetType = "Self - " + $printer.name
+                   $targetprinter = $targetprinter.name
+                   $Operation = "Set Default"
+                  
                     #break;
              }
 
          #########################
     			  if ($DeletePrinterAction -eq $true){
+              $TargetType = "Self" + " - " + $printer.name
+              $targetprinter = $printer.name
+              $TargetPort = $printer.portname
+              $Operation = "Delete"
              $printer.delete()
              $DeletePrinterAction = $false
+             if ($appliedpolicy -ne "Basic") { $Operation += " Delete Source"}
              }
 
 		}#End of if statement for when printer is redirected
 		
 		[string]$RoundEnd = Get-Date  -Format "hh:mm:ss" 
 	 $RoundOutput = $Round | Out-String
-[string]$LogEntry = [string]$StartTime + "," +  [string]$Round + "," + [string]$RoundStart + "," + [string]$RoundEnd + "," + $Source + "," + $SourceUser + "," + $Operation + "," + $TargetName + "," + $TargetType + "," + $TargetDefault + "," + $TargetPort + "," + $ClientName
+[string]$LogEntry = [string]$StartTime + "," +  [string]$Round + "," + [string]$RoundStart + "," + [string]$RoundEnd + "," + $Source + "," + $SourceUser + "," + $Operation + "," + $TargetName + "," + $TargetType + "," + $TargetDefault + "," + $TargetPort + "," + $ClientName + "," + $appliedpolicy
 
-
+$appliedpolicy = $null
    if (($TargetType -ne "") -and  ($TargetType -ne $Null)) { 
 					   
  Add-Content "C:\Program Files\Printerceptor\Log.csv"  $LogEntry
