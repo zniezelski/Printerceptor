@@ -81,6 +81,7 @@ copy-item -Path HKLM:\SOFTWARE\Printerceptor\Active\AdvancedPolicy -Destination 
 	if ((get-culture).name -eq "es-US"){set-ItemProperty -Path $key -Name "RedirectedExpression" -Value "( \((\d+) redireccionado\))"  -Force}
     if ((get-culture).name -eq "de-CH"){set-ItemProperty -Path $key -Name "RedirectedExpression" -Value "( \(umgeleitet (\d+)\))" -Force}
     if ((get-culture).name -eq "pl-PL"){set-ItemProperty -Path $key -Name "RedirectedExpression" -Value "( \(przekierowana sesja: (\d+)\))" -Force}
+    if ((get-culture).name -eq "fr-FR"){set-ItemProperty -Path $key -Name "RedirectedExpression" -Value "( (redirection de (\d+)))" -Force}
 	} 
 
 	
@@ -112,7 +113,7 @@ copy-item -Path HKLM:\SOFTWARE\Printerceptor\Active\AdvancedPolicy -Destination 
 		$Form.Height = 510
 		$Form.FormBorderStyle = "FixedDialog"
 		$Form.MaximizeBox = $False
-		$Form.Text = "Printerceptor (Version 4.0 Alpha)"
+		$Form.Text = "Printerceptor (Version 4.0)"
 
 
 		$label = New-Object System.Windows.Forms.Label
@@ -326,7 +327,7 @@ copy-item -Path HKLM:\SOFTWARE\Printerceptor\Active\AdvancedPolicy -Destination 
 				#If the drive is in the list to be checked add it checked, else just add it	
 				
 				if ($isRecreatechecked -eq $true) {$RecreateList.Items.Add($Drivername).Checked = $true}else {
-				if (($Drivername -eq "Remote Desktop Easy Print") -or ($Drivername -match "Microsoft") -or ($Drivername -match "Fax")) {}else{
+				if (($Drivername -eq "Remote Desktop Easy Print") -or ($Drivername -eq "Terminal Services Easy Print") -or ($Drivername -match "Microsoft") -or ($Drivername -match "Fax")) {}else{
 				$RecreateList.Items.Add($Drivername)
 				}
 				}
@@ -348,7 +349,7 @@ copy-item -Path HKLM:\SOFTWARE\Printerceptor\Active\AdvancedPolicy -Destination 
 					#add checked else just add it
 				if ($isRenamedchecked -eq $true) {$DoNotRenameList.Items.Add($Drivername).Checked = $true} else { 
 				
-				 if (($Drivername -eq "Remote Desktop Easy Print")-or ($Drivername -match "Microsoft") -or ($Drivername -match "Fax")) {} else{
+				 if (($Drivername -eq "Remote Desktop Easy Print") -or ($Drivername -eq "Terminal Services Easy Print") -or ($Drivername -match "Microsoft") -or ($Drivername -match "Fax")) {} else{
 				$DoNotRenameList.Items.Add($Drivername)
 				}
 				}
@@ -521,7 +522,7 @@ copy-item -Path HKLM:\SOFTWARE\Printerceptor\Active\AdvancedPolicy -Destination 
     $checkboxnosaveexit = new-object System.Windows.Forms.checkbox
     $checkboxnosaveexit.Location = new-object System.Drawing.Size(10,162)
     $checkboxnosaveexit.Size = new-object System.Drawing.Size(250,50)
-    $checkboxnosaveexit.Text = "Don't exit when saving. Just inform."
+    $checkboxnosaveexit.Text = "Prompt when saving. Don't just exit."
    $noexitsave = Get-ItemProperty -Path $key -Name "NoExitSave" | foreach { $_.NoExitSave }
     if ($noexitsave -eq "1") { $checkboxnosaveexit.Checked = $True} else { $checkboxnosaveexit.Checked = $false }
 
@@ -1468,8 +1469,13 @@ $MyTask.Enabled = $true
        if ($noexitsave -eq "1")
        {
        
-     [System.Windows.Forms.MessageBox]::Show("Changes have been saved and are active.") 
-       
+     $OUTPUT = [System.Windows.Forms.MessageBox]::Show("Changes have been saved and are active. Would you like to exit?","Printerceptor - Settings Saved", 4) 
+     if ($OUTPUT -eq "YES" ) 
+{
+
+[environment]::exit(0)
+} 
+   
        }
 
 		})
@@ -1877,6 +1883,7 @@ $scriptblock =
 		$PolicyEnableState.Location =  New-Object System.Drawing.Point(90,39) 
 		$PolicyEnableState.Size = New-Object System.Drawing.Size(300,17)
         if ($PolicyEnable -eq 1) {  $PolicyEnableState.Checked = $true} else { $PolicyEnableState.Checked = $false}
+        if ($policyaction -eq "add") { $PolicyEnableState.Checked = $true}
 		$PolicyEnableState.Text = ""
         #$PolicyEnableState.Add_CheckStateChanged({if ($PolicyEnable.Checked -eq $true){$txtdefaultprinter.Enabled = $true} else {$txtdefaultprinter.Enabled = $false}}) 
   
@@ -2753,7 +2760,7 @@ $PrinterLoopStart = Get-Date
       if ($conditionsrequired -eq $null) {$conditionsrequired = 45444}
 
 
-       	if((($Printer.name -match $LoadRedirectedExpression) -and ($Printer.DriverName -notmatch "Fax") -and ($Printer.DriverName -notmatch "Microsoft")  -and ($Printer.DriverName -ne "Remote Desktop Easy Print")) -or (($DeletePrinterAction -eq $true) -and ($Printer.name -match $LoadRedirectedExpression)))  {
+       	if((($Printer.name -match $LoadRedirectedExpression) -and ($Printer.DriverName -notmatch "Fax") -and ($Printer.DriverName -notmatch "Microsoft")  -and ($Printer.DriverName -ne "Remote Desktop Easy Print") -and ($Printer.DriverName -ne "Terminal Services Easy Print")) -or (($DeletePrinterAction -eq $true) -and ($Printer.name -match $LoadRedirectedExpression)))  {
 
 		#Renames the printer if that is all it should do
 		  if (($Rename -eq $True) -and ($Recreate -eq $False) -and (($NoRename -ne $true) -or ($renameoverride -eq  $true)))
@@ -2928,9 +2935,11 @@ $PrinterLoopStart = Get-Date
                     
                     $ActSetDefault = $false
                    $shiftdelete = $false
-                   $TargetType = "Self - " + $printer.name
-                   $targetprinter = $targetprinter.name
+                   $TargetType = "Existing - " + $ActDefaultPrinterSelection
+                   $targetname =  $ActDefaultPrinterSelection
                    $Operation = "Set Default"
+                   $TargetDefault = "Yes"
+                  $TargetPort = $Printer.portname
                   
                     #break;
              }
@@ -2940,10 +2949,10 @@ $PrinterLoopStart = Get-Date
               $TargetType = "Self" + " - " + $printer.name
               $targetprinter = $printer.name
               $TargetPort = $printer.portname
-              $Operation = "Delete"
+             
              $printer.delete()
-             $DeletePrinterAction = $false
-             if ($appliedpolicy -ne "Basic") { $Operation += " Delete Source"}
+             
+             if ($appliedpolicy -ne "General") { $Operation += " Delete Source"} else {$Operation = "Delete"}
              }
 
 		}#End of if statement for when printer is redirected
@@ -2952,11 +2961,29 @@ $PrinterLoopStart = Get-Date
 	 $RoundOutput = $Round | Out-String
 [string]$LogEntry = [string]$StartTime + "," +  [string]$Round + "," + [string]$RoundStart + "," + [string]$RoundEnd + "," + $Source + "," + $SourceUser + "," + $Operation + "," + $TargetName + "," + $TargetType + "," + $TargetDefault + "," + $TargetPort + "," + $ClientName + "," + $appliedpolicy
 
+ $Operation = $null
+
+
+$t = 0
+
+
+                foreach ($item in [array]$LogEntries){
+                if ($item -eq ([string]$StartTime + $Source)){
+                $t++
+                break;
+                }
+                }
+
+
+$shiftdelete = $false
+$DeletePrinterAction = $false
+[array]$LogEntries+= [string]$StartTime + $Source
+
 $appliedpolicy = $null
    if (($TargetType -ne "") -and  ($TargetType -ne $Null)) { 
-					   
- Add-Content "C:\Program Files\Printerceptor\Log.csv"  $LogEntry
+	if ($t -eq 0){Add-Content "C:\Program Files\Printerceptor\Log.csv"  $LogEntry}				   
  
+
 }
  [string]$LogEntry = ""
  #[string]$Round = ""
