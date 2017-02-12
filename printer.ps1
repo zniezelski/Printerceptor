@@ -1806,6 +1806,7 @@ $scriptblock =
         if ($policyaction -eq "edit"){
         $key =  "HKLM:\SOFTWARE\Printerceptor\AdvancedPolicy\" + $AdvancedPolicyList.Selecteditems[0].Text
         $txtpolicydescription = Get-ItemProperty -Path $key -Name "Description" | select -ExpandProperty Description
+        $global:RegistryClientnames = Get-ItemProperty -Path "HKLM:\SOFTWARE\Printerceptor" -Name "ClientNames" | select -ExpandProperty ClientNames
         $CondPrinterName = Get-ItemProperty -Path $key -Name "CondPrinterName" | select -ExpandProperty CondPrinterName
         $CondPrinterDriver = Get-ItemProperty -Path $key -Name "CondPrinterDriver" | select -ExpandProperty CondPrinterDriver
         $CondPrinterIsDefault = Get-ItemProperty -Path $key -Name "CondPrinterIsDefault" | select -ExpandProperty CondPrinterIsDefault
@@ -1866,7 +1867,7 @@ $scriptblock =
 		$labelPolicyDescription.Text = "Enabled:"
 
 		$labelConditions = New-Object System.Windows.Forms.Label
-		$labelConditions.location = New-Object System.Drawing.Point(5, 90)
+		$labelConditions.location = New-Object System.Drawing.Point(12, 65)
 		$labelConditions.Size = New-Object System.Drawing.Size(70, 15)
 		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
 		$labelConditions.Font = $FontBold
@@ -1904,7 +1905,7 @@ $scriptblock =
         if ($CondPrinterName -eq 1) { $txtprinterNames.enabled = $true} else {$txtprinterNames.enabled = $false}
 
   		$ConditionPrinterDriver = New-Object System.Windows.Forms.checkbox
-		$ConditionPrinterDriver.Location = New-Object System.Drawing.Size(5,260)
+		$ConditionPrinterDriver.Location = New-Object System.Drawing.Size(5,280)
 		$ConditionPrinterDriver.Size = New-Object System.Drawing.Size(300,17)
 		if ($CondPrinterDriver -eq 1) {  $ConditionPrinterDriver.Checked = $true} else { $ConditionPrinterDriver.Checked = $false}
 		$ConditionPrinterDriver.Text = "Printer driver is one of the following:"
@@ -1912,7 +1913,7 @@ $scriptblock =
 
 
         $txtprinterdrivers = New-Object System.Windows.Forms.listview 
-        $txtprinterdrivers.Location = New-Object System.Drawing.Point(5,280) 
+        $txtprinterdrivers.Location = New-Object System.Drawing.Point(5,300) 
         $txtprinterdrivers.Size = New-Object System.Drawing.Size(300,100)
         $txtprinterdrivers.Multiline = $true
         $txtprinterdrivers.Text = $CondPrinterDriverSelection
@@ -1945,27 +1946,40 @@ $scriptblock =
         #printer is a default
 
         $ConditionPrinterIsDefault = New-Object System.Windows.Forms.checkbox
-		$ConditionPrinterIsDefault.Location = New-Object System.Drawing.Size(5,398)
+		$ConditionPrinterIsDefault.Location = New-Object System.Drawing.Size(5,92)
 		$ConditionPrinterIsDefault.Size = New-Object System.Drawing.Size(300,17)
 		$ConditionPrinterIsDefault.Text = "Printer is set as default"
         if ($CondPrinterIsDefault -eq 1) {  $ConditionPrinterIsDefault.Checked = $true} else { $ConditionPrinterIsDefault.Checked = $false}
        
         ###
-        $txtprinterclient = New-Object System.Windows.Forms.listview 
-        $txtprinterclient.Location = New-Object System.Drawing.Point(329,140) 
-        $txtprinterclient.Size = New-Object System.Drawing.Size(300,100)
-        $txtprinterclient.Multiline = $true
-        $txtprinterclient.Text = $CondPrinterDriverSelection
-        $txtprinterclient.CheckBoxes = $true
-        $txtprinterclient.Columns.Add("Client Name",278)
-        $txtprinterclient.View = [System.Windows.Forms.View]::details
+
         if ($CondPrinterClient -eq 1) { $txtprinterclient.enabled = $true} else { $txtprinterclient.enabled = $false;}
                
                
           #client client name list
 
          $clientnames = import-csv "C:\Program Files\Printerceptor\Log.csv"  | % {$_."Client Name"} | group-object | sort-object name |  foreach { $_.Name }
-         foreach ($client in $clientnames){
+         
+        foreach ($item in $clientnames){
+        $p = 0
+        foreach ($name in $global:RegistryClientnames){if ($name -eq $item){$p++; break;}}
+
+        if ($p -eq 0){$global:RegistryClientnames += $item }
+
+
+        }
+
+
+                $txtprinterclient = New-Object System.Windows.Forms.listview 
+        $txtprinterclient.Location = New-Object System.Drawing.Point(329,140) 
+        $txtprinterclient.Size = New-Object System.Drawing.Size(300,100)
+        $txtprinterclient.Multiline = $true
+        $txtprinterclient.Text = $CondPrinterDriverSelection
+        $txtprinterclient.CheckBoxes = $true
+        if ($global:RegistryClientnames.Count -gt 4) { $txtprinterclient.Columns.Add("Client Name",278)} else { $txtprinterclient.Columns.Add("Client Name",295)}
+       
+        $txtprinterclient.View = [System.Windows.Forms.View]::details
+         foreach ($client in ($global:RegistryClientnames | Sort-Object)){
 
 
          if ($client -ne ""){
@@ -1981,9 +1995,43 @@ $scriptblock =
                  }
          }
 
+
+         		$AdvClientButtonRadd = New-Object System.Windows.Forms.Button
+		$AdvClientButtonRadd.location = New-Object System.Drawing.Point(448,245)
+		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
+		#$ButtonRadd.Font = $FontBold
+		$AdvClientButtonRadd.Size = New-Object System.Drawing.Size(80, 20)
+		$AdvClientButtonRadd.Text = "Add..."
+        $AdvClientButtonRadd.add_Click({
+
+        [void][Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic')
+
+$title = 'Add Client Name'
+$msg   = 'Enter Client Name to Add:'
+
+$text = [Microsoft.VisualBasic.Interaction]::InputBox($msg, $title)
+
+if (($text -ne "") -and ($text -ne $null)){
+$txtprinterclient.Items.Add($text)
+}
+        })
+		$frmPolicyManagement.Controls.Add($AdvClientButtonRadd)
+
+
+         $AdvClientButtonRRemove = New-Object System.Windows.Forms.Button
+		$AdvClientButtonRRemove.location = New-Object System.Drawing.Point(538,245)
+		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
+		#$ButtonRadd.Font = $FontBold
+		$AdvClientButtonRRemove.Size = New-Object System.Drawing.Size(80, 20)
+		$AdvClientButtonRRemove.Text = "Remove"
+        $AdvClientButtonRRemove.add_click({
+        $txtprinterclient.SelectedItems[0].Remove()
+        })
+		$frmPolicyManagement.Controls.Add($AdvClientButtonRRemove)
+
          #user scope
         $ConditionPrinterUser = New-Object System.Windows.Forms.checkbox
-		$ConditionPrinterUser.Location = New-Object System.Drawing.Size(329,260)
+		$ConditionPrinterUser.Location = New-Object System.Drawing.Size(329,280)
 		$ConditionPrinterUser.Size = New-Object System.Drawing.Size(300,17)
 	
 		$ConditionPrinterUser.Text = "User or group is one of the following:"
@@ -1992,7 +2040,7 @@ $scriptblock =
 
 		$AdvObjectList = New-Object System.Windows.Forms.ListView 
 		$AdvObjectList.view  = [System.Windows.Forms.View]::Details
-		$AdvObjectList.location = New-Object System.Drawing.Size(329,280) 
+		$AdvObjectList.location = New-Object System.Drawing.Size(329,300) 
 		$AdvObjectList.Size = New-Object System.Drawing.Size(300,100) 
 		#$ObjectList.CheckBoxes = $true
         	$AdvObjectList.Columns.Add("Name",245)
@@ -2007,7 +2055,7 @@ $scriptblock =
 
 
 		$AdvButtonRadd = New-Object System.Windows.Forms.Button
-		$AdvButtonRadd.location = New-Object System.Drawing.Point(448,385)
+		$AdvButtonRadd.location = New-Object System.Drawing.Point(448,405)
 		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
 		#$ButtonRadd.Font = $FontBold
 		$AdvButtonRadd.Size = New-Object System.Drawing.Size(80, 20)
@@ -2080,7 +2128,7 @@ return $DialogPicker.Selectedobject.Name
 
        
 		$AdvButtonRremove = New-Object System.Windows.Forms.Button
-		$AdvButtonRremove.location = New-Object System.Drawing.Point(538,385)
+		$AdvButtonRremove.location = New-Object System.Drawing.Point(538,405)
 		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
 		#$ButtonRremove.Font = $FontBold
 		$AdvButtonRremove.Size = New-Object System.Drawing.Size(90, 20)
@@ -2168,7 +2216,7 @@ $AdvListViewItem.Subitems.Add($global:Advsecpath[$counter]) | Out-Null
 
         #Actions
 		$labelActions = New-Object System.Windows.Forms.Label
-		$labelActions.location = New-Object System.Drawing.Point(5, 420)
+		$labelActions.location = New-Object System.Drawing.Point(12, 415)
 		$labelActions.Size = New-Object System.Drawing.Size(70, 15)
 		$FontBold = new-object System.Drawing.Font("Arial",8,[Drawing.FontStyle]'Bold' )
 		$labelActions.Font = $FontBold
@@ -2265,6 +2313,11 @@ $frmPolicyManagement.close()
 })
 $PolicyOk.add_Click({ 
 
+
+ foreach($item in $txtprinterclient.Items) {$global:clientnameoutput+= @($item.subitems[0].text);}
+New-ItemProperty -Path "HKLM:\SOFTWARE\Printerceptor"  -Name "ClientNames"  -Value $global:clientnameoutput -PropertyType "multistring" -Force
+$global:RegistryClientnames = $null
+$global:clientnameoutput  = $null
 #Get priority number
 if ($policyaction -ne "edit"){$NextPrirority = ((Get-ChildItem HKLM:\SOFTWARE\Printerceptor\AdvancedPolicy | Measure-Object ).Count) + 1;}
 #See if policy already exists
@@ -2330,6 +2383,7 @@ New-ItemProperty -Path $PolicyPath -Name "CondPrinterIsDefault" -Value $CondPrin
 New-ItemProperty -Path $PolicyPath -Name "CondPrinterNameSelection" -Value $txtPrinterNames.Text -PropertyType "multistring" -Force
 New-ItemProperty -Path $PolicyPath -Name "CondPrinterDriverSelection" -Value $CondPrinterDriverSelectionOutput -PropertyType "multistring" -Force
 New-ItemProperty -Path $PolicyPath -Name "CondPrinterClientSelection" -Value $CondPrinterClientSelectionOutput -PropertyType "multistring" -Force
+
 New-ItemProperty -Path $PolicyPath -Name "ActRename" -Value $ActRename -PropertyType "dword" -Force
 New-ItemProperty -Path $PolicyPath -Name "ActRecreate" -Value $ActRecreate -PropertyType "dword" -Force
 New-ItemProperty -Path $PolicyPath -Name "enabled" -Value $policyenabled -PropertyType "dword" -Force
