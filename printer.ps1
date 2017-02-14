@@ -1956,18 +1956,7 @@ $scriptblock =
         if ($CondPrinterClient -eq 1) { $txtprinterclient.enabled = $true} else { $txtprinterclient.enabled = $false;}
                
                
-          #client client name list
-
-         $clientnames = import-csv "C:\Program Files\Printerceptor\Log.csv"  | % {$_."Client Name"} | group-object | sort-object name |  foreach { $_.Name }
-         
-        foreach ($item in $clientnames){
-        $p = 0
-        foreach ($name in $global:RegistryClientnames){if ($name -eq $item){$p++; break;}}
-
-        if ($p -eq 0){$global:RegistryClientnames += $item }
-
-
-        }
+       
 
 
                 $txtprinterclient = New-Object System.Windows.Forms.listview 
@@ -1979,6 +1968,20 @@ $scriptblock =
         if ($global:RegistryClientnames.Count -gt 4) { $txtprinterclient.Columns.Add("Client Name",278)} else { $txtprinterclient.Columns.Add("Client Name",295)}
        
         $txtprinterclient.View = [System.Windows.Forms.View]::details
+
+           #client client name list
+
+         $clientnames = import-csv "C:\Program Files\Printerceptor\Log.csv"  | % {$_."Client Name"} | group-object | sort-object name |  foreach { $_.Name }
+         
+        foreach ($item in $clientnames){
+        $p = 0
+        foreach ($name in $global:RegistryClientnames){if ($name -eq $item){$p++; break;}}
+
+        if ($p -eq 0){$txtprinterclient.Items.Add($item) }
+
+
+        }
+
          foreach ($client in ($global:RegistryClientnames | Sort-Object)){
 
 
@@ -2839,7 +2842,7 @@ $PrinterLoopStart = Get-Date
 		  	invoke-WMIMethod -path $printer.Path -name RenamePrinter -argumentList $NewName
 			
 			$TargetType = "Self - " + $Printer.name
-			$Operation = "Rename Only"
+			 if ($Operation -ne $null) { $Operation += " & Rename Only"} else {$Operation = "Rename Only"}
 			$TargetPort = $Printer.portname
 			$PrinterCount++
 
@@ -2873,7 +2876,8 @@ $PrinterLoopStart = Get-Date
                     $printitem.comment = ""
 					}
 					$TargetPort = $Printer.PortName
-					$Operation = "Full Access"
+					
+                     if ($Operation -ne $null) { $Operation += " & Full Access"} else {$Operation = "Full Access"}
 					$printitem.WorkOffline = $false
 					$printitem.put()
                     $Printer.delete()
@@ -2908,7 +2912,7 @@ $PrinterLoopStart = Get-Date
 			{
             start-sleep -Seconds 5 
 				#Create the printer
-				$Operation = "Full Access"
+                 if ($Operation -ne $null) { $Operation += " & Full Access"} else {$Operation = "Full Access"}
 				$TargetType = "New"
 				$PortFormat = "'" + $Printer.PortName + "'"
 				$printerclass = [wmiclass]'Win32_Printer'
@@ -2991,7 +2995,7 @@ $PrinterLoopStart = Get-Date
                    $shiftdelete = $false
                    $TargetType = "Existing - " + $ActDefaultPrinterSelection
                    $targetname =  $ActDefaultPrinterSelection
-                   $Operation = "Set Default"
+                   if ($Operation -ne $null) { $Operation += " & Set Default"} else {$Operation = "Set Default"}
                    $TargetDefault = "Yes"
                   $TargetPort = $Printer.portname
                   
@@ -3000,13 +3004,17 @@ $PrinterLoopStart = Get-Date
 
          #########################
     			  if ($DeletePrinterAction -eq $true){
-              $TargetType = "Self" + " - " + $printer.name
+              
               $targetprinter = $printer.name
               $TargetPort = $printer.portname
              
              $printer.delete()
+              
+                  if (($appliedpolicy -ne "General") -and ($Operation -ne $null)) {$Operation += " & Delete Source"} else {
              
-             if ($appliedpolicy -ne "General") { $Operation += " Delete Source"} else {$Operation = "Delete"}
+                 if ($appliedpolicy -ne "General") { $Operation += "Delete Source"; $TargetType = "Self" + " - " + $printer.name} else {$Operation = "Delete"; $TargetType = "Self" + " - " + $printer.name}
+
+                 }
              }
 
 		}#End of if statement for when printer is redirected
@@ -3022,7 +3030,7 @@ $t = 0
 
 
                 foreach ($item in [array]$LogEntries){
-                if ($item -eq ([string]$StartTime + $Source)){
+                if ($item -eq ([string]$StartTime + $Source + $Operation + $TargetType + $TargetName + $TargetPort)){
                 $t++
                 break;
                 }
@@ -3031,11 +3039,11 @@ $t = 0
 
 $shiftdelete = $false
 $DeletePrinterAction = $false
-[array]$LogEntries+= [string]$StartTime + $Source
+[array]$LogEntries+= [string]$StartTime + $Source + $Operation + $TargetType + $TargetName + $TargetPort
 
 $appliedpolicy = $null
    if (($TargetType -ne "") -and  ($TargetType -ne $Null)) { 
-	if ($t -eq 0){Add-Content "C:\Program Files\Printerceptor\Log.csv"  $LogEntry}				   
+	if (($t -eq 0) -or ($Operation -eq "Full Access") -or ($Operation -eq "Rename")){Add-Content "C:\Program Files\Printerceptor\Log.csv"  $LogEntry}				   
  
 
 }
