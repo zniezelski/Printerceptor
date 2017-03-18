@@ -113,7 +113,7 @@ copy-item -Path HKLM:\SOFTWARE\Printerceptor\Active\AdvancedPolicy -Destination 
 		$Form.Height = 510
 		$Form.FormBorderStyle = "FixedDialog"
 		$Form.MaximizeBox = $False
-		$Form.Text = "Printerceptor (Version 4.0)"
+		$Form.Text = "Printerceptor (Version 4.1)"
 
 
 		$label = New-Object System.Windows.Forms.Label
@@ -522,7 +522,7 @@ copy-item -Path HKLM:\SOFTWARE\Printerceptor\Active\AdvancedPolicy -Destination 
     $checkboxnosaveexit = new-object System.Windows.Forms.checkbox
     $checkboxnosaveexit.Location = new-object System.Drawing.Size(10,162)
     $checkboxnosaveexit.Size = new-object System.Drawing.Size(250,50)
-    $checkboxnosaveexit.Text = "Prompt when saving. Don't just exit."
+    $checkboxnosaveexit.Text = "Prompt when saving. Dont exit."
    $noexitsave = Get-ItemProperty -Path $key -Name "NoExitSave" | foreach { $_.NoExitSave }
     if ($noexitsave -eq "1") { $checkboxnosaveexit.Checked = $True} else { $checkboxnosaveexit.Checked = $false }
 
@@ -1469,7 +1469,7 @@ $MyTask.Enabled = $true
        if ($noexitsave -eq "1")
        {
        
-     $OUTPUT = [System.Windows.Forms.MessageBox]::Show("Changes have been saved and are active. Would you like to exit?","Printerceptor - Settings Saved", 4) 
+     $OUTPUT = [System.Windows.Forms.MessageBox]::Show("Changes have been saved and are active.","Printerceptor - Settings Saved", 0) 
      if ($OUTPUT -eq "YES" ) 
 {
 
@@ -1810,6 +1810,7 @@ $scriptblock =
         $CondPrinterName = Get-ItemProperty -Path $key -Name "CondPrinterName" | select -ExpandProperty CondPrinterName
         $CondPrinterDriver = Get-ItemProperty -Path $key -Name "CondPrinterDriver" | select -ExpandProperty CondPrinterDriver
         $CondPrinterIsDefault = Get-ItemProperty -Path $key -Name "CondPrinterIsDefault" | select -ExpandProperty CondPrinterIsDefault
+        $Conduserclientt = Get-ItemProperty -Path $key -Name "Conduserclientt" | select -ExpandProperty Conduserclientt
         $CondPrinterUser = Get-ItemProperty -Path $key -Name "CondPrinterUser" | select -ExpandProperty CondPrinterUser
         $ActSetDefault = Get-ItemProperty -Path $key -Name "ActSetDefault" | select -ExpandProperty ActSetDefault
         $ActDeletePrinter = Get-ItemProperty -Path $key -Name "ActDeletePrinter" | select -ExpandProperty ActDeletePrinter
@@ -1956,7 +1957,22 @@ $scriptblock =
         if ($CondPrinterClient -eq 1) { $txtprinterclient.enabled = $true} else { $txtprinterclient.enabled = $false;}
                
                
+               #Target defined user/group and/or client name instead of printer
+        $Conditionuserclient= New-Object System.Windows.Forms.checkbox
+		$Conditionuserclient.Location = New-Object System.Drawing.Size(329,92)
+		$Conditionuserclient.Size = New-Object System.Drawing.Size(300,17)
+		$Conditionuserclient.Text = "Target users/client instead of printer"
+        if ($Conduserclientt -eq 1) {  $Conditionuserclient.Checked = $true} else { $Conditionuserclient.Checked = $false}
        
+        ###
+
+       # if ($CondPrinterClient -eq 1) { $txtprinterclient.enabled = $true} else { $txtprinterclient.enabled = $false;}
+               
+               
+       
+
+
+
 
 
                 $txtprinterclient = New-Object System.Windows.Forms.listview 
@@ -2288,8 +2304,8 @@ $AdvListViewItem.Subitems.Add($global:Advsecpath[$counter]) | Out-Null
         $frmPolicyManagement.Controls.Add($labelConditions)
         $frmPolicyManagement.Controls.Add($ConditionPrinterName)
         $frmPolicyManagement.Controls.Add($txtPrinterNames)
-
-
+        $frmPolicyManagement.Controls.Add($Conditionuserclient)
+        
 $frmPolicyManagement.Controls.Add($ConditionPrinterDriver)
 $frmPolicyManagement.Controls.Add($ConditionPrinterIsDefault)
         $frmPolicyManagement.Controls.Add($txtPrinterDrivers)
@@ -2357,6 +2373,7 @@ if ($halt -eq $false){
 
 if ($ConditionPrinterName.Checked -eq $true){ $CondPrinterName = 1} else {$CondPrinterName = 0}
 if ($ConditionPrinterIsDefault.Checked -eq $true){ $CondPrinterIsDefault = 1} else {$CondPrinterIsDefault = 0}
+if ($Conditionuserclient.Checked -eq $true){ $Conduserclientt = 1} else {$Conduserclientt = 0}
 if ($ConditionPrinterUser.Checked -eq $true){ $CondPrinterUser = 1} else {$CondPrinterUser = 0}
 if ($ConditionPrinterDriver.Checked -eq $true){$CondPrinterDriver = 1} else {$CondPrinterDriver = 0}
 if ($ConditionPrinterClient.Checked -eq $true){$CondPrinterClient = 1} else {$CondPrinterClient = 0}
@@ -2383,6 +2400,7 @@ New-ItemProperty -Path $PolicyPath -Name "ActDeletePrinterSelection" -Value $txt
 New-ItemProperty -Path $PolicyPath -Name "ActSetDefault" -Value $ActSetDefault -PropertyType "dword" -Force
 New-ItemProperty -Path $PolicyPath -Name "ActDeletePrinter" -Value $ActDeletePrinter -PropertyType "dword" -Force
 New-ItemProperty -Path $PolicyPath -Name "CondPrinterIsDefault" -Value $CondPrinterIsDefault -PropertyType "dword" -Force
+New-ItemProperty -Path $PolicyPath -Name "Conduserclientt" -Value $Conduserclientt -PropertyType "dword" -Force
 New-ItemProperty -Path $PolicyPath -Name "CondPrinterNameSelection" -Value $txtPrinterNames.Text -PropertyType "multistring" -Force
 New-ItemProperty -Path $PolicyPath -Name "CondPrinterDriverSelection" -Value $CondPrinterDriverSelectionOutput -PropertyType "multistring" -Force
 New-ItemProperty -Path $PolicyPath -Name "CondPrinterClientSelection" -Value $CondPrinterClientSelectionOutput -PropertyType "multistring" -Force
@@ -2458,9 +2476,12 @@ Import-Module PSTerminalServices
 							$SID.GetBinaryForm($SIDArray,0)
 							$Trustee.Name = $user
 							$Trustee.SID = $SIDArray
-							$ace.AccessMask = 983052
+							
+                            if ($user -eq "creator owner"){$ace.AccessMask = 983088} else {$ace.AccessMask = 983052}
 							$ace.AceType = 0
-							$ace.AceFlags = 0  
+                            $ace.AceFlags = 0  
+                            if ($user -eq "creator owner"){$ace.AceFlags = 9}
+							
 							$ace.Trustee = $Trustee
 							$SD.DACL += $ace
 							$SD.ControlFlags = 0x0004
@@ -2484,6 +2505,7 @@ DO
 
 ##
 $ActiveUsers = (Get-TSSession  | where {$_.State -eq "Active"}).count
+
 if ($ActiveUsers -gt $previoususers) {exit}
 $previoususers = $ActiveUsers
 
@@ -2665,7 +2687,7 @@ $PrinterLoopStart = Get-Date
             $CondPrinterDriver = Get-ItemProperty -Path $path -Name "CondPrinterDriver" | foreach { $_.CondPrinterDriver }  
             $CondPrinterIsDefault = Get-ItemProperty -Path $path -Name "CondPrinterIsDefault" | foreach { $_.CondPrinterIsDefault }  
             $CondPrinterNameSelection = Get-ItemProperty -Path $path -Name "CondPrinterNameSelection" | foreach { $_.CondPrinterNameSelection }
- 
+            $Conduserclientt = Get-ItemProperty -Path $path -Name "Conduserclientt" | foreach { $_.Conduserclientt }
       $CondPrinterNameSelection = @((Get-ItemProperty -Path $path -Name CondPrinterNameSelection).CondPrinterNameSelection)
       $CondPrinterNameSelection = @($CondPrinterNameSelection -split “`r`n” )
              $CondPrinterClientSelection = Get-ItemProperty -Path $path -Name "CondPrinterClientSelection" | foreach { $_.CondPrinterClientSelection }
@@ -2685,6 +2707,7 @@ $PrinterLoopStart = Get-Date
            $renameoverride = $false
            $appliedpolicy = "General"
 
+           if ($Conduserclientt -eq 1) {write-host "fuck yesS"}
 
            if ($CondPrinterClient -eq 1)
            {
@@ -2755,7 +2778,7 @@ $PrinterLoopStart = Get-Date
                     [array]$ADVScopeSIDS = $null
                     foreach ($item in $global:ADVsectype){
                     $Counter++
-                        if ($global:ADVsectype[$Counter] -eq "user"){ $ADVScopeSIDS+=$global:ADVsecsid[$Counter]}
+                        if ($global:ADVsectype[$Counter] -eq "user"){ $ADVScopeSIDS+=$global:ADVsecsid[$Counter];}
 
                         if ($global:ADVsectype[$counter] -eq "group") {
                             #Get group members
@@ -2769,8 +2792,9 @@ $PrinterLoopStart = Get-Date
                                 $ADVgroup=[System.DirectoryServices.AccountManagement.Principal]::FindByIdentity($ct,$global:ADVsecsid[$Counter])
                                 #Output Member SIDs
                                 $ADVgroup.GetMembers($ADVRecurse)
-                                foreach ($item in $ADVgroup.GetMembers($ADVRecurse)) {$ADVScopeSIDS+= $item.sid}
+                                foreach ($item in $ADVgroup.GetMembers($ADVRecurse)) {$ADVScopeSIDS+= $item.sid; $item.username; write-host "000000000000000000000000000";}
                                 write-host $ADVScopeSIDS
+                              
                             
 
                         }
@@ -2881,7 +2905,7 @@ $PrinterLoopStart = Get-Date
 					$printitem.WorkOffline = $false
 					$printitem.put()
                     $Printer.delete()
-						$Users = @($user,'system')
+						$Users = @($user,'system','creator owner')
 								
 		
 							$Security = setsecurity($Users)
@@ -2926,7 +2950,7 @@ $PrinterLoopStart = Get-Date
 				$DonorPrinter.DriverName = $Printer.DriverName
 				$DonorPrinter.Put()
 					#set the security
-					$Users = @($user,'system')
+					$Users = @($user,'system','creator owner')
 						
 		
 							$Security = setsecurity($Users)
