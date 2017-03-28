@@ -113,7 +113,7 @@ copy-item -Path HKLM:\SOFTWARE\Printerceptor\Active\AdvancedPolicy -Destination 
 		$Form.Height = 510
 		$Form.FormBorderStyle = "FixedDialog"
 		$Form.MaximizeBox = $False
-		$Form.Text = "Printerceptor (Version 4.1)"
+		$Form.Text = "Printerceptor (Version 4.2)"
 
 
 		$label = New-Object System.Windows.Forms.Label
@@ -1405,7 +1405,6 @@ $MyTask.Enabled = $true
 
 
 
-		write-host $DoNotRenameList.CheckedItems
 		$DoNotListRenameListOutput = $null
 		$RecreateListOutput = $null
 		$PrinterFormatListOutput = $null
@@ -1961,8 +1960,57 @@ $scriptblock =
         $Conditionuserclient= New-Object System.Windows.Forms.checkbox
 		$Conditionuserclient.Location = New-Object System.Drawing.Size(329,92)
 		$Conditionuserclient.Size = New-Object System.Drawing.Size(300,17)
-		$Conditionuserclient.Text = "Target users/client instead of printer"
-        if ($Conduserclientt -eq 1) {  $Conditionuserclient.Checked = $true} else { $Conditionuserclient.Checked = $false}
+		$Conditionuserclient.Text = "Target users/clients instead of redirected printers"
+if ($Conduserclientt -eq 1) {  
+$Conditionuserclient.Checked = $true
+    $ConditionPrinterName.Enabled = $false
+    $ConditionPrinterName.Enabled = $false
+   $ConditionPrinterName.Checked = $false
+  $txtPrinterNames.enabled = $false
+  $ConditionPrinterDriver.Enabled = $false
+$ConditionPrinterDriver.checked = $false
+  $CondPrinterDriverSelection.enabled = $false
+  $CondPrinterDriverSelection.checked = $false
+ $ConditionPrinterIsDefault.enabled = $false
+ $ConditionPrinterIsDefault.checked = $false
+  $ActionRenamePrinter.enabled = $false
+  $ActionRenamePrinter.checked = $false
+  $ActionRecreatePrinter.enabled = $false
+  $ActionRecreatePrinter.checked = $false
+  $ActionDeletePrinter.enabled = $false
+   $ActionDeletePrinter.checked = $false
+} else {
+ $Conditionuserclient.Checked = $false
+
+ }
+   $Conditionuserclient.Add_CheckStateChanged({if ($Conditionuserclient.Checked -eq $true)
+   {
+   $ConditionPrinterName.Enabled = $false
+   $ConditionPrinterName.Checked = $false
+  $txtPrinterNames.enabled = $false
+  $ConditionPrinterDriver.Enabled = $false
+$ConditionPrinterDriver.checked = $false
+  $CondPrinterDriverSelection.enabled = $false
+  $CondPrinterDriverSelection.checked = $false
+ $ConditionPrinterIsDefault.enabled = $false
+ $ConditionPrinterIsDefault.checked = $false
+  $ActionRenamePrinter.enabled = $false
+  $ActionRenamePrinter.checked = $false
+  $ActionRecreatePrinter.enabled = $false
+  $ActionRecreatePrinter.checked = $false
+  $ActionDeletePrinter.enabled = $false
+   $ActionDeletePrinter.checked = $false
+   } 
+   else {
+  $ConditionPrinterName.Enabled = $true
+  $ConditionPrinterDriver.Enabled = $true
+  $CondPrinterDriverSelection.enabled = $true
+ $ConditionPrinterIsDefault.enabled = $true
+  $ActionRenamePrinter.enabled = $true
+  $ActionRecreatePrinter.enabled = $true
+  $ActionDeletePrinter.enabled = $true
+   }})
+       # if ($Conduserclientt -eq 1) {  $Conditionuserclient.Checked = $true} else { $Conditionuserclient.Checked = $false}
        
         ###
 
@@ -2296,7 +2344,25 @@ $AdvListViewItem.Subitems.Add($global:Advsecpath[$counter]) | Out-Null
 		#$ButtonResOk.Font = $FontBold
 		$PolicyOk.Size = New-Object System.Drawing.Size(80, 20)
 		$PolicyOk.Text = "Ok"
-        
+        if ($Conduserclientt -eq 1) {  
+$Conditionuserclient.Checked = $true
+    $ConditionPrinterName.Enabled = $false
+    $ConditionPrinterName.Enabled = $false
+   $ConditionPrinterName.Checked = $false
+  $txtPrinterNames.enabled = $false
+  $ConditionPrinterDriver.Enabled = $false
+$ConditionPrinterDriver.checked = $false
+  $CondPrinterDriverSelection.enabled = $false
+  $CondPrinterDriverSelection.checked = $false
+ $ConditionPrinterIsDefault.enabled = $false
+ $ConditionPrinterIsDefault.checked = $false
+  $ActionRenamePrinter.enabled = $false
+  $ActionRenamePrinter.checked = $false
+  $ActionRecreatePrinter.enabled = $false
+  $ActionRecreatePrinter.checked = $false
+  $ActionDeletePrinter.enabled = $false
+   $ActionDeletePrinter.checked = $false
+   }
         $frmPolicyManagement.Controls.Add($labelPolicyName)
         $frmpolicymanagement.Controls.Add($txtpolicyname)
         $frmPolicyManagement.Controls.Add($labelPolicyDescription)
@@ -2583,6 +2649,260 @@ Write-Host "WMI Time" $Elapsed
 
 $PrinterLoopStart = Get-Date
 	$PrinterCount = 0
+
+
+
+
+#......policies for not matching printers####################
+
+
+
+  
+     $policies = Get-ChildItem -Path "HKLM:\SOFTWARE\Printerceptor\AdvancedPolicy" 
+        $policies = $policies | Foreach-Object {Get-ItemProperty $_.PsPath } | where {$_.enabled -eq "1"} | Sort-Object priority  | foreach { $_.pschildname}
+
+foreach ($policy in $policies){
+            $path = "HKLM:\SOFTWARE\Printerceptor\AdvancedPolicy\" + $policy
+            $CondPrinterName = Get-ItemProperty -Path $path -Name "CondPrinterName" | foreach { $_.CondPrinterName }  
+            $CondPrinterClient = Get-ItemProperty -Path $path -Name "CondPrinterClient" | foreach { $_.CondPrinterClient }  
+             $CondPrinterUser = Get-ItemProperty -Path $path -Name "CondPrinterUser" | foreach { $_.CondPrinterUser }  
+            $CondPrinterDriver = Get-ItemProperty -Path $path -Name "CondPrinterDriver" | foreach { $_.CondPrinterDriver }  
+            $CondPrinterIsDefault = Get-ItemProperty -Path $path -Name "CondPrinterIsDefault" | foreach { $_.CondPrinterIsDefault }  
+            $CondPrinterNameSelection = Get-ItemProperty -Path $path -Name "CondPrinterNameSelection" | foreach { $_.CondPrinterNameSelection }
+            $Conduserclientt = Get-ItemProperty -Path $path -Name "Conduserclientt" | foreach { $_.Conduserclientt }
+      $CondPrinterNameSelection = @((Get-ItemProperty -Path $path -Name CondPrinterNameSelection).CondPrinterNameSelection)
+      $CondPrinterNameSelection = @($CondPrinterNameSelection -split “`r`n” )
+             $CondPrinterClientSelection = Get-ItemProperty -Path $path -Name "CondPrinterClientSelection" | foreach { $_.CondPrinterClientSelection }
+            $CondPrinterDriverSelection = Get-ItemProperty -Path $path -Name "CondPrinterDriverSelection" | foreach { $_.CondPrinterDriverSelection }  
+            $ActDeletePrinter = Get-ItemProperty -Path $path -Name "ActDeletePrinter" | foreach { $_.ActDeletePrinter }  
+            $ActSetDefault = Get-ItemProperty -Path $path -Name "ActSetDefault" | foreach { $_.ActSetDefault }  
+            $ActRename = Get-ItemProperty -Path $path -Name "ActRename" | foreach { $_.ActRename }  
+            $ActRecreate = Get-ItemProperty -Path $path -Name "ActRecreate" | foreach { $_.ActRecreate }  
+            $ActDefaultPrinterSelection = Get-ItemProperty -Path $path -Name "ActDefaultPrinterSelection" | foreach { $_.ActDefaultPrinterSelection }
+            $ActDeletePrinterSelection = Get-ItemProperty -Path $path -Name "ActDeletePrinterSelection" | foreach { $_.ActDeletePrinterSelection }
+             [array]$global:ADVsecsid = Get-ItemProperty -Path $path -Name "SecSID" | select -ExpandProperty SecSID 
+             [array]$global:ADVsectype = Get-ItemProperty -Path $path -Name "SecType" | select -ExpandProperty SecType
+              [array]$global:ADVsecsid = Get-ItemProperty -Path $path -Name "Secsid" | select -ExpandProperty Secsid
+                [array]$global:ADVsecpath = Get-ItemProperty -Path $path -Name "secpath" | select -ExpandProperty Secpath
+            $conditionsrequired = 0
+            $conditionsmet = 0
+           $renameoverride = $false
+           $appliedpolicy = "General"
+                                                   $Source = ""
+                                         $SourceUser = ""
+                                         $TargetName = ""
+                                         $TargetType = ""
+                                         $TargetPort = ""
+                                         $Operation = ""
+                                         [string]$RoundEnd = ""
+           #get logged in users
+
+            $loggedonusers = get-TSSession 
+ $global:loggedinusersids = @()
+ $global:loggedinusernames = @()
+ foreach ($logeduser in $loggedonusers)
+ {
+ if ($logeduser -eq " ") {break}
+ $AdObj = New-Object System.Security.Principal.NTAccount($logeduser.username) -ErrorAction Ignore
+$strSID = $AdObj.Translate([System.Security.Principal.SecurityIdentifier])  
+$global:loggedinusersids+= $strSID.Value
+$global:loggedinusernames+=$logeduser.username
+ }
+
+ 
+           #If checking for logged in user and then the clientname
+           if ($Conduserclientt -eq 1) 
+           {
+                 $conditionsrequired++
+                    #Figure out if user logged in
+                  if($CondPrinterUser -eq 1)
+                  { 
+                         
+                      $conditionsrequired++
+                        foreach ($item in $global:ADVsecsid)
+                        {
+                       $conditionsrequired = 1
+                        #$conditionsmet = 0
+                             $II = 0
+                            foreach ($item2 in $global:loggedinusersids)
+
+                            {
+                         
+                            $II++
+                          
+                                #If 
+                                if ($item -eq $item2) 
+                                    { 
+                                     
+                                    $conditionsmet++
+                                     $ok = $true
+                                        if ($CondPrinterClient -eq 1)
+                                        {
+                                        $ok = $false
+                                       #conditionsrequired ++
+                                           
+                                            #See if user is logged into the client
+                                            $sessions = get-TSSession
+                                            foreach ($selection in $CondPrinterClientSelection)
+                                            {
+                                           
+                                           
+                                            if ($sessions | Where-Object {$_.clientname -eq $selection -and $_.UserName -eq $global:loggedinusernames[$II -1] })
+
+                                           {
+                                                    #set the users default printer
+                                                    #item
+                                                 $ok = $true
+                                                 $conditionsmet++
+                                                 
+                                         
+                                            
+                                            } 
+                                        }
+                                    }
+
+                                    if ($conditionsmet -ge $conditionsrequired) 
+                                    {
+
+                                    
+
+                                       if (($ActSetDefault -eq 1) -and ($ok -eq $true))
+                                        {
+                                        #set the default printer
+                                        
+ 	                                        $regpath = "HKU:\" + $item + "\Software\Microsoft\Windows NT\CurrentVersion\Windows\SessionDefaultDevices"
+		                                        $Key  = Get-ChildItem $regpath | foreach { $_.PSChildName } 
+		                                        $regpath = $regpath + "\" + $Key
+                                        $defaultprinter = $Printers | Where-Object {$_.name -eq $ActDefaultPrinterSelection}
+                                        $Value = $defaultprinter.name + "," + "winspool" + "," + $defaultprinter.PortName
+                                        #see if the default to set is not already the default
+                                        $SessionDefault = Get-ItemProperty -Path $regpath -Name "Device" | foreach { $_.Device }
+                                        if ($SessionDefault -ne $Value){
+                                        New-ItemProperty -Path $regpath -Name "Device" -Value $Value -PropertyType "string" -Force
+                                         [string]$LogEntry = ""
+                                         $SourceUser = $global:loggedinusernames[$II -1]
+                                        $Source = "Non Redirected Printer Policy Sourced"
+                                        $ClientName = (get-tssession| Where-Object {$_.username -eq $global:loggedinusernames[$II -1]}).clientname
+                               
+                                        $Operation = "Set Default"
+                                        $TargetName = $defaultprinter.name
+                                        $TargetType = "Existing - " + $defaultprinter.name
+                                        $appliedpolicy = $policy
+                                        $TargetDefault = "Yes"
+                                        $TargetPort = $defaultprinter.portname
+                                        [string]$RoundEnd = Get-Date  -Format "hh:mm:ss" 
+                                                                                [string]$LogEntry = [string]$StartTime + "," +  [string]$Round + "," + [string]$RoundStart + "," + [string]$RoundEnd + "," + $Source + "," + $SourceUser + "," + $Operation + "," + $TargetName + "," + $TargetType + "," + $TargetDefault + "," + $TargetPort + "," + $ClientName + "," + $appliedpolicy
+                                        Add-Content "C:\Program Files\Printerceptor\Log.csv"  $LogEntry
+                                         [string]$LogEntry = ""
+                                         #[string]$Round = ""
+                                         $Source = ""
+                                         $SourceUser = ""
+                                         $TargetName = ""
+                                         $TargetType = ""
+                                         $TargetPort = ""
+                                         $Operation = ""
+                                         [string]$RoundEnd = ""
+  
+                                        
+                                        }
+
+                                       }
+                                    }
+                       
+                             }
+                
+                         }
+
+
+
+                    }
+                    }
+
+
+                  
+            }
+
+
+            #Set default is just going by the clientname
+            if (($CondPrinterClient -eq 1) -and ($CondPrinterUser -ne 1))
+            {
+            
+                foreach ($hostselection in $CondPrinterClientSelection)
+                {
+               
+                    $sessions = get-TSSession
+                    if ($sessions | Where-Object {$_.clientname -eq $hostselection}){
+                   
+                        $targetuser = $sessions | Where-Object {$_.clientname -eq $hostselection}
+                        foreach ($target in $targetuser)
+                        {
+                        #get the users SID
+                        
+                        $AdObj = New-Object System.Security.Principal.NTAccount($target.username) -ErrorAction Ignore
+                        $strSID = $AdObj.Translate([System.Security.Principal.SecurityIdentifier])  
+                        #$global:loggedinusersids+ $strSID.Value
+                        #set the users default
+                         $regpath = "HKU:\" + $strSID.value + "\Software\Microsoft\Windows NT\CurrentVersion\Windows\SessionDefaultDevices"
+		                                        $Key  = Get-ChildItem $regpath | foreach { $_.PSChildName } 
+		                                        $regpath = $regpath + "\" + $Key
+                                        $defaultprinter = $Printers | Where-Object {$_.name -eq $ActDefaultPrinterSelection}
+                                        $Value = $defaultprinter.name + "," + "winspool" + "," + $defaultprinter.PortName
+
+                                        $SessionDefault = Get-ItemProperty -Path $regpath -Name "Device" | foreach { $_.Device }
+                                          if ($SessionDefault -ne $Value){
+                                        New-ItemProperty -Path $regpath -Name "Device" -Value $Value -PropertyType "string" -Force
+                                        $SourceUser = $target.username
+                                        $Source = "Non Redirected Printer Policy Sourced"
+                                        $ClientName = (get-tssession| Where-Object {$_.username -eq $target.username}).clientname
+                                        $Operation = "Set Default"
+                                        $TargetName = $defaultprinter.name
+                                        $TargetType = "Existing - " + $defaultprinter.name
+                                        $appliedpolicy = $policy
+                                        $TargetDefault = "Yes"
+                                        $TargetPort = $defaultprinter.portname
+                                        [string]$RoundEnd = Get-Date  -Format "hh:mm:ss" 
+                                                                                [string]$LogEntry = [string]$StartTime + "," +  [string]$Round + "," + [string]$RoundStart + "," + [string]$RoundEnd + "," + $Source + "," + $SourceUser + "," + $Operation + "," + $TargetName + "," + $TargetType + "," + $TargetDefault + "," + $TargetPort + "," + $ClientName + "," + $appliedpolicy
+                                        Add-Content "C:\Program Files\Printerceptor\Log.csv"  $LogEntry
+                                         [string]$LogEntry = ""
+                                         #[string]$Round = ""
+                                         $Source = ""
+                                         $SourceUser = ""
+                                         $TargetName = ""
+                                         $TargetType = ""
+                                         $TargetPort = ""
+                                         $Operation = ""
+                                         [string]$RoundEnd = ""
+                                        }
+                                       
+                        }
+                    }
+                }
+            }
+
+            #
+
+#end of policies
+
+       }
+                
+
+          
+
+
+           ###get sids from logged in users
+
+
+          #exit
+
+#################################################################
+
+
+
+
+
+
+
+
 	foreach ($Printer in $Printers)
 	{
  #See if only drivers set for recreation should be renamed
@@ -2603,8 +2923,7 @@ $PrinterLoopStart = Get-Date
 
 
 	    foreach ($obj3 in $ssd){if (($obj3.Trustee.Name -ne "system") -and ($obj3.Trustee.Name -ne "Print Operators")  -and ($obj3.Trustee.Name -ne "Creator Owner")  -and ($obj3.Trustee.Name -ne "Account Unknown") ){ $User = $obj3.Trustee.Name; $SID = $obj3.Trustee.SIDString;} }
-	    
-    write-host $SID
+	   
         
         ##Check Restriction Policy
         $Skip = $false
@@ -2707,7 +3026,7 @@ $PrinterLoopStart = Get-Date
            $renameoverride = $false
            $appliedpolicy = "General"
 
-           if ($Conduserclientt -eq 1) {write-host "fuck yesS"}
+           if ($Conduserclientt -eq 1) { $conditionsrequired++}
 
            if ($CondPrinterClient -eq 1)
            {
@@ -2744,7 +3063,7 @@ $PrinterLoopStart = Get-Date
                         if($Printer.name -match $PrinterName)
                         {
                             $conditionsmet++
-                            Write-Host $printeritem.name
+                            
                             break
                         }
                     }
@@ -2763,7 +3082,6 @@ $PrinterLoopStart = Get-Date
                         if ($printer.drivername -eq $drivername)
                         {
                         $conditionsmet++
-                        write-host $printer.name
 
                         break
                         }
@@ -2773,7 +3091,7 @@ $PrinterLoopStart = Get-Date
             if ($CondPrinterUser -eq 1)
             {
                             $conditionsrequired++
-                        write-host "sid" $SID
+                      
                                     $Counter = -1
                     [array]$ADVScopeSIDS = $null
                     foreach ($item in $global:ADVsectype){
@@ -2792,7 +3110,7 @@ $PrinterLoopStart = Get-Date
                                 $ADVgroup=[System.DirectoryServices.AccountManagement.Principal]::FindByIdentity($ct,$global:ADVsecsid[$Counter])
                                 #Output Member SIDs
                                 $ADVgroup.GetMembers($ADVRecurse)
-                                foreach ($item in $ADVgroup.GetMembers($ADVRecurse)) {$ADVScopeSIDS+= $item.sid; $item.username; write-host "000000000000000000000000000";}
+                                foreach ($item in $ADVgroup.GetMembers($ADVRecurse)) {$ADVScopeSIDS+= $item.sid; $item.username;}
                                 write-host $ADVScopeSIDS
                               
                             
@@ -2801,7 +3119,7 @@ $PrinterLoopStart = Get-Date
                           
                     }
                           foreach ($item in $ADVScopeSIDS){
-                            if ($item -eq $SID) { $conditionsmet++; $Skip = $false; write-host "policy"; break;}
+                            if ($item -eq $SID) { $conditionsmet++; $Skip = $false; break;}
                             }
 
 
@@ -2827,9 +3145,6 @@ $PrinterLoopStart = Get-Date
            if ($ActRename -eq 1){ $renameoverride = $true; $Recreate = $False; $Rename = $true; $NoRename = $False }
         if ($ActRecreate -eq 1){ $Recreate = $true}
 
-          #Default Printer Options
-          #if ($ActSetDefault -eq 1){foreach ($targetprinter in $Printers){if ($targetprinter.name -eq $ActDefaultPrinterSelection) {$targetdefaultprinter = $targetprinter.name; Write-Host Targeted default $targetprinter.name; $advDefaultPrinter = $targetprinter.name + "," + "winspool" + "," + $targetprinter.PortName }}}
-          #write-host $policy appActDeletePrinterlies; break;
           break;
         }
 
@@ -2878,7 +3193,7 @@ $PrinterLoopStart = Get-Date
 		  if (($conditionsmet -eq $conditionsrequired) -and ($ActRecreate -ne $true)){ $recreateabort = $true}
 		  ##see if printer already exists indicating that it has been created already and doesn't need created. If it doesn't then it sets the queue settings
 		$AlreadyExists = $false
- if (($conditionsrequired -eq $conditionsmet) -and ($ActRecreate -ne $true) -and ($recreateabort -ne $true)) { add-content C:\test.txt "fucked"; $Recreate = $false}
+ if (($conditionsrequired -eq $conditionsmet) -and ($ActRecreate -ne $true) -and ($recreateabort -ne $true)) {  $Recreate = $false}
 		if ($Recreate -eq $true)
          
 		{
